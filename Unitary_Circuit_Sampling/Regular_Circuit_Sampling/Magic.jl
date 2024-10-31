@@ -1,17 +1,12 @@
 module Measure_Magic
 
 using LinearAlgebra
+using SparseArrays
 
-export GenerateAllPauliStrings, PauliMatrix, MeasureMagic
+export GenerateAllPauliStrings, PauliMatrix, MeasureMagic, PauliOperatorList
 
-function MeasureMagic(State, Strings, α = 2)
-    # Calculating the stabiliser Rényi Entropy
-    # https://doi.org/10.1103/PhysRevLett.128.050402
-
-    No_Qubits = Int(log2(length(State)))
-
-    HilbertSpaceDimension = 2^No_Qubits
-    Ξ = Vector()
+function PauliOperatorList(Strings, No_Qubits::Int)
+    σ = Vector{SparseMatrixCSC{ComplexF64}}(undef, 4^No_Qubits)
     for PauliIndex in 1:4^No_Qubits
         CurrentString   = Strings[PauliIndex]
         Operator        = PauliMatrix(CurrentString[1])
@@ -19,9 +14,25 @@ function MeasureMagic(State, Strings, α = 2)
             LocalPauliMatrix    = PauliMatrix(CurrentString[QubitIndex])
             Operator            = kron(Operator, LocalPauliMatrix)
         end # FOR QubitIndex
-        push!(Ξ, (1/HilbertSpaceDimension) * (conj(transpose(State[:])) * Operator * State[:])^2)
+        σ[PauliIndex] = sparse(Operator)
     end # FOR PauliIndex
-    Magic = real((1 - α)^(-1) * log(sum(Ξ.^α)) - log(HilbertSpaceDimension))
+    return σ
+end
+
+function MeasureMagic(State, PauliOperators, α = 2)
+    # Calculating the stabiliser Rényi Entropy
+    # https://doi.org/10.1103/PhysRevLett.128.050402
+
+    No_Qubits = Int(log2(length(State)))
+
+    HilbertSpaceDimension = 2^No_Qubits
+    
+    Ξ = Vector{Float64}(undef, 4^No_Qubits)
+    for PauliIndex in 1:4^No_Qubits
+        Operator = PauliOperators[PauliIndex]
+        Ξ[PauliIndex] = real((1/HilbertSpaceDimension) * (conj(transpose(State[:])) * Operator * State[:])^2)
+    end # FOR PauliIndex
+    Magic = (1 - α)^(-1) * log(sum(Ξ.^α)) - log(HilbertSpaceDimension)
     return Magic
 end
 
@@ -33,13 +44,13 @@ end
 
 function PauliMatrix(which_Pauli)
     if which_Pauli == 'I' || which_Pauli == 0
-        Pauli_Matrix = [1.0 0.0;0.0 1.0]
+        Pauli_Matrix = sparse([1.0 0.0;0.0 1.0])
     elseif which_Pauli == 'X' || which_Pauli == 1
-        Pauli_Matrix = [0.0 1.0; 1.0 0.0]
+        Pauli_Matrix = sparse([0.0 1.0; 1.0 0.0])
     elseif which_Pauli == 'Y' || which_Pauli == 2
-        Pauli_Matrix = [0.0 -im; im 0.0]
+        Pauli_Matrix = sparse([0.0 -im; im 0.0])
     elseif which_Pauli == 'Z' || which_Pauli == 3
-        Pauli_Matrix = [1.0 0.0; 0.0 -1.0]
+        Pauli_Matrix = sparse([1.0 0.0; 0.0 -1.0])
     end
 
     return Pauli_Matrix
