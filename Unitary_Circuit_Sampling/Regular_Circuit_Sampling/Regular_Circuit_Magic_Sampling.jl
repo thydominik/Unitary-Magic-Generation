@@ -8,6 +8,7 @@
 
 using Random
 using ProgressBars
+using JLD2
 
 include("Random_Unitaries.jl")
 include("Magic.jl")
@@ -20,24 +21,24 @@ Random.seed!(Seed)
 
 # Sampling parameters
 No_Samples = 2^20
+for N in 1
+    No_Qubits = N
 
-No_Qubits = 2
-
-Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
+    Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
 
 
-Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits)
-PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
+    Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits)
+    PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
 
-Magic = Vector()
+    Magic = Vector{Float64}()
 
-for i in ProgressBar(1:No_Samples)
-    t1 = time();
-    
-    U = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(No_Qubits);
-    State = U * Psi_0
-    push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
-    # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
+    for i in ProgressBar(1:No_Samples)    
+        U = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(No_Qubits);
+        State = U * Psi_0
+        push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
+        # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
+    end
+
+    fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed).jdl2"
+    @save fname Magic Psi_0 No_Samples No_Qubits Seed
 end
-
-
