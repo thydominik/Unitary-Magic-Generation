@@ -9,6 +9,7 @@
 
 using Random
 using ProgressBars
+using JLD2
 
 include("Random_Unitaries.jl")
 include("Magic.jl")
@@ -22,29 +23,28 @@ Random.seed!(Seed)
 # Sampling parameters
 No_Samples = 2^20
 
-# Set the number of qubits first
-No_Qubits = 2
+for N in 3:5
+    # Set the number of qubits first
+    No_Qubits = N
 
-# generate the first/Initial state
-Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
+    Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits)
+    PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
 
-# Generate all possible Pauli strings (as char):
-Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits)
-# Predetermine the pauli operators and save them, these will be used at every magic calculation
-PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
+    for D in 1:N
+        Depth = D
+        Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
 
-MaxDepth = No_Qubits
+        Magic   = Vector{Float64}()
 
-Magic = Vector{Float32}()
-for D in ProgressBar(1:MaxDepth)
-    for i in ProgressBar(1:No_Samples)
-        t1 = time();
-        
-        U = Random_Unitary_Generation.Generate_BW_Unitary_Circuit(No_Qubits, D);
-        State = U * Psi_0
-        push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
-        # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
+        for i in ProgressBar(1:No_Samples)    
+            U = Random_Unitary_Generation.Generate_BW_Unitary_Circuit(No_Qubits, D);
+            State = U * Psi_0
+            push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
+            # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
+        end
+
+        fname = "BWUnitaryCircuitMagicSampled_N_$(No_Qubits)_D_$(D)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
+        @save fname Magic Psi_0 No_Samples No_Qubits Depth Seed
     end
-
 end
 
