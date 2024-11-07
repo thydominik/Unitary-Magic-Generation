@@ -104,3 +104,21 @@ for PauliIndex in 1:4^No_Qubits
     Ξ[PauliIndex] = real((1/HilbertSpaceDimension) * (conj(transpose(State[:])) * Operator * State[:])^2)
 end # FOR PauliIndex
 Magic = (1 - α)^(-1) * log(sum(Ξ.^α)) - log(HilbertSpaceDimension)
+
+
+
+
+using JLD2
+
+a = 2
+b = 3
+c = 4
+vector = rand(2^10)
+
+fname = "RegularUnitaryCircuitMagic_$(a)_iter_$(b).jdl2"
+@save fname vector a b c
+
+data = JLD2.load(fname) 
+
+
+data = JLD2.load("RegularUnitaryCircuitMagicSampled_N_6_Samples_1048576_Seed_1.jdl2")
