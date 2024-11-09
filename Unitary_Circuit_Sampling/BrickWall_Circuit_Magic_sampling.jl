@@ -11,8 +11,8 @@ using Random
 using ProgressBars
 using JLD2
 
-include("Random_Unitaries.jl")
-include("Magic.jl")
+include("C:\\Dominik\\PhD\\Projects\\Unitary-Magic-Generation\\Modules\\Random_Unitaries.jl")
+include("C:\\Dominik\\PhD\\Projects\\Unitary-Magic-Generation\\Modules\\Magic.jl")
 using .Random_Unitary_Generation
 using .Measure_Magic
 
@@ -23,7 +23,7 @@ Random.seed!(Seed)
 # Sampling parameters
 No_Samples = 2^20
 
-for N in 6
+for N in 8
     # Set the number of qubits first
     No_Qubits = N
 
