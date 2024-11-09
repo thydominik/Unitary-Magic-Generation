@@ -22,9 +22,9 @@ Seed = 1
 Random.seed!(Seed)
 
 # Sampling parameters
-No_Samples = 2^2
+No_Samples = 2^20
 
-for N in 3:5
+for N in 1:1
     No_Qubits = N
 
     Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
@@ -50,9 +50,6 @@ for N in 3:5
         # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
     end
 
-    fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
+    fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed)_w_Ent.jld2"
     @save fname Magic Psi_0 No_Samples No_Qubits Seed Entanglement SubSystems
 end
-
-using HDF5
-
