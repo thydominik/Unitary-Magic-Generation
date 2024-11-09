@@ -23,7 +23,7 @@ Random.seed!(Seed)
 # Sampling parameters
 No_Samples = 2^20
 
-for N in 3:5
+for N in 6
     # Set the number of qubits first
     No_Qubits = N
 
