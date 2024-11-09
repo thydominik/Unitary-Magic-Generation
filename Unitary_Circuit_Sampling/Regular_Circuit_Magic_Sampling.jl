@@ -9,6 +9,7 @@
 using Random
 using ProgressBars
 using JLD2
+using Base.Threads
 
 include("Random_Unitaries.jl")
 include("Magic.jl")
@@ -24,7 +25,7 @@ Random.seed!(Seed)
 # Sampling parameters
 No_Samples = 2^20
 
-for N in 1:1
+for N in 1:6
     No_Qubits = N
 
     Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
