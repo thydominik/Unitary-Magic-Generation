@@ -23,9 +23,9 @@ include(filepath)
 filepath = joinpath(current_dir, "..", "Modules", "Entanglement.jl")
 include(filepath)
 
-using .Random_Unitary_Generation
-using .Measure_Magic
 using .Measure_Entanglement
+using .Measure_Magic
+using .Random_Unitary_Generation
 
 function Regular_Circuit_Magic_sampling(No_Qubits::Int, No_Samples::Int, Seed::Int)
     # Setting the seed for the random number generation
@@ -42,30 +42,28 @@ function Regular_Circuit_Magic_sampling(No_Qubits::Int, No_Samples::Int, Seed::I
     PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
 
     Magic           = Vector{Float64}()
-    Entanglement    = Vector{Vector{Float64}}()
-    SubSystems      = Vector{Vector{Vector{Int}}}()
+    #Entanglement    = Vector{Vector{Float64}}()
+    #SubSystems      = Vector{Vector{Vector{Int}}}()
 
     for i in ProgressBar(1:No_Samples)    
         U = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(No_Qubits);
         State = U * Psi_0
-        SVN, SubSys = Measure_Entanglement.calculate_entanglement(State)
+        #SVN, SubSys = Measure_Entanglement.calculate_entanglement(State)
             # println(typeof(SubSys))
             # println("iteration : ", i)
             # println("Subsystem: ", SubSys)
             # println("Entropies: ", SVN)
-        push!(Entanglement, SVN)
-        push!(SubSystems, SubSys)
+        #push!(Entanglement, SVN)
+        #push!(SubSystems, SubSys)
         push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
             # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
     end
 
-    fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed)_w_Ent.jld2"
-    @save fname Magic Psi_0 No_Samples No_Qubits Seed Entanglement SubSystems
+    fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
+    @save fname Magic #Psi_0 #No_Samples #No_Qubits #Seed #Entanglement #SubSystems
 end
 
-N = 3
-Partitions = 2^5
+N = 1
+Partitions = 1
 div = Int(log2(Partitions))
-for s in 1:Partitions
-    Regular_Circuit_Magic_sampling(N, 2^(20 - div), s)
-end
+Regular_Circuit_Magic_sampling(1, 2^(22), 1)
