@@ -11,22 +11,30 @@ using ProgressBars
 using JLD2
 using Base.Threads
 
-include("Random_Unitaries.jl")
-include("Magic.jl")
-include("Entanglement.jl")
+current_dir = @__DIR__
+
+# Unitary matrices
+filepath = joinpath(current_dir, "..", "Modules", "Magic.jl")
+include(filepath)
+# Magic
+filepath = joinpath(current_dir, "..", "Modules", "Random_Unitaries.jl")
+include(filepath)
+# Measure_Entanglement
+filepath = joinpath(current_dir, "..", "Modules", "Entanglement.jl")
+include(filepath)
+
 using .Random_Unitary_Generation
 using .Measure_Magic
 using .Measure_Entanglement
 
-# Setting the seed for the random number generation
-Seed = 1
-Random.seed!(Seed)
+function Regular_Circuit_Magic_sampling(No_Qubits::Int, No_Samples::Int, Seed::Int)
+    # Setting the seed for the random number generation
+    Random.seed!(Seed)
 
-# Sampling parameters
-No_Samples = 2^20
-
-for N in 1:6
-    No_Qubits = N
+    # Sampling parameters
+    No_Samples = No_Samples
+    # Set the number of qubits first
+    No_Qubits = No_Qubits
 
     Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
 
@@ -41,16 +49,23 @@ for N in 1:6
         U = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(No_Qubits);
         State = U * Psi_0
         SVN, SubSys = Measure_Entanglement.calculate_entanglement(State)
-        #println(typeof(SubSys))
-        #println("iteration : ", i)
-        #println("Subsystem: ", SubSys)
-        #println("Entropies: ", SVN)
+            # println(typeof(SubSys))
+            # println("iteration : ", i)
+            # println("Subsystem: ", SubSys)
+            # println("Entropies: ", SVN)
         push!(Entanglement, SVN)
         push!(SubSystems, SubSys)
         push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
-        # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
+            # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
     end
 
     fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed)_w_Ent.jld2"
     @save fname Magic Psi_0 No_Samples No_Qubits Seed Entanglement SubSystems
+end
+
+N = 3
+Partitions = 2^5
+div = Int(log2(Partitions))
+for s in 1:Partitions
+    Regular_Circuit_Magic_sampling(N, 2^(20 - div), s)
 end
