@@ -10,41 +10,56 @@
 using Random
 using ProgressBars
 using JLD2
+using Base.Threads
 
-include("C:\\Dominik\\PhD\\Projects\\Unitary-Magic-Generation\\Modules\\Random_Unitaries.jl")
-include("C:\\Dominik\\PhD\\Projects\\Unitary-Magic-Generation\\Modules\\Magic.jl")
+current_dir = @__DIR__
+
+# Unitary matrices
+filepath = joinpath(current_dir, "..", "Modules", "Magic.jl")
+include(filepath)
+# Magic
+filepath = joinpath(current_dir, "..", "Modules", "Random_Unitaries.jl")
+include(filepath)
+#include("C:\\Dominik\\PhD\\Projects\\Unitary-Magic-Generation\\Modules\\Magic.jl")
 using .Random_Unitary_Generation
 using .Measure_Magic
 
-# Setting the seed for the random number generation
-Seed = 1
-Random.seed!(Seed)
+function BrickWall_Circuit_Magic_sampling(No_Qubits::Int, Depth::Int, No_Samples::Int, Seed::Int)
+    # Setting the seed for the random number generation
+    Random.seed!(Seed)
 
-# Sampling parameters
-No_Samples = 2^20
+    # Sampling parameters
+    No_Samples = No_Samples
 
-for N in 8
     # Set the number of qubits first
-    No_Qubits = N
+    No_Qubits = No_Qubits
+
+    Depth = Depth
 
     Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits)
     PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
 
-    for D in 1:N
-        Depth = D
-        Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
+    Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
 
-        Magic   = Vector{Float64}()
+    Magic = Vector{Float64}()
 
-        for i in ProgressBar(1:No_Samples)    
-            U = Random_Unitary_Generation.Generate_BW_Unitary_Circuit(No_Qubits, D);
-            State = U * Psi_0
-            push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
-            # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
-        end
-
-        fname = "BWUnitaryCircuitMagicSampled_N_$(No_Qubits)_D_$(D)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
-        @save fname Magic Psi_0 No_Samples No_Qubits Depth Seed
+    for i in ProgressBar(1:No_Samples)    
+        U = Random_Unitary_Generation.Generate_BW_Unitary_Circuit(No_Qubits, Depth);
+        State = U * Psi_0
+        push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
     end
+
+    fname = "BWUnitaryCircuitMagicSampled_N_$(No_Qubits)_D_$(Depth)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
+    @save fname Magic Psi_0 No_Samples No_Qubits Depth Seed
 end
+
+
+N = 6
+D = 1
+Partitions = 2^5
+div = Int(log2(Partitions))
+for s in 1:Partitions
+    BrickWall_Circuit_Magic_sampling(N, D, 2^(20-div), s)
+end
+
 
