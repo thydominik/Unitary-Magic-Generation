@@ -5,7 +5,7 @@ using Combinatorics
 
 export reduced_density_matrix, von_neumann_entropy, calculate_entanglement
 
-function reduced_density_matrix(state_vector::Vector{Complex{Float64}}, subsystem_qubits::Vector{Int})
+function reduced_density_matrix(state_vector::Vector{ComplexF64}, subsystem_qubits::Vector{Int})
 
     No_Qubits = Int(log2(length(state_vector)))
 
@@ -35,7 +35,6 @@ function reduced_density_matrix(state_vector::Vector{Complex{Float64}}, subsyste
             reduced_matrix[i, j] = sum_val
         end
     end
-    
     return reduced_matrix, keep_qubits
 end
 
@@ -45,15 +44,15 @@ function von_neumann_entropy(density_matrix::Matrix{Complex{Float64}})
 end
 
 function calculate_entanglement(state_vector::Vector{Complex{Float64}})
-    No_Qubits = Int(log2(length(state_vector)))
-    Entropies = Float64[]
-    SubSystems = Vector{Int}[]
-    for k in 1:div(No_Qubits, 2)
-        for subsystem in combinations(1:No_Qubits, k)
-            reduced_matrix, keep_qubits = reduced_density_matrix(state_vector, collect(subsystem))
-            push!(Entropies, von_neumann_entropy(reduced_matrix))
-            push!(SubSystems, keep_qubits)
-        end
+    No_Qubits   = Int(log2(length(state_vector)))
+    Entropies   = Float64[]
+    SubSystems  = Vector{Int}[]
+
+    for k in 1:(No_Qubits - 1)
+        subsystem = 1:k
+        reduced_matrix, keep_qubits = reduced_density_matrix(state_vector, collect(subsystem))
+        push!(Entropies, von_neumann_entropy(reduced_matrix))
+        push!(SubSystems, keep_qubits)
     end
     
     return Entropies, SubSystems
