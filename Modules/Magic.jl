@@ -3,7 +3,7 @@ module Measure_Magic
 using LinearAlgebra
 using SparseArrays
 
-export GenerateAllPauliStrings, PauliMatrix, MeasureMagic, PauliOperatorList
+export GenerateAllPauliStrings, PauliMatrix, MeasureMagic_Pure, MeasureMagic_Mixed, PauliOperatorList
 
 function PauliOperatorList(Strings, No_Qubits::Int)
     σ = Vector{SparseMatrixCSC{ComplexF64}}(undef, 4^No_Qubits)
@@ -19,7 +19,24 @@ function PauliOperatorList(Strings, No_Qubits::Int)
     return σ
 end
 
-function MeasureMagic(State, PauliOperators, α = 2)
+function MeasureMagic_Mixed(ϱ, σ, α = 2)
+    # Calculating the stabiliser Rényi Entropy
+    # https://doi.org/10.1103/PhysRevLett.128.050402
+
+    No_Qubits = Int(log2(size(ϱ, 1)))
+
+    HilbertSpaceDimension = 2^No_Qubits
+    
+    Ξ = Vector{Float64}(undef, 4^No_Qubits)
+    for PauliIndex in 1:4^No_Qubits
+        Operator = σ[PauliIndex]
+        Ξ[PauliIndex] = real((1/HilbertSpaceDimension) * sum(diag(Operator * ϱ))^2)
+    end # FOR PauliIndex
+    Magic = (1 - α)^(-1) * log2(sum(Ξ.^α)) - log2(HilbertSpaceDimension) + log2(sum(eigvals(ϱ).^2))
+    return Magic
+end
+
+function MeasureMagic_Pure(State, PauliOperators, α = 2)
     # Calculating the stabiliser Rényi Entropy
     # https://doi.org/10.1103/PhysRevLett.128.050402
 
@@ -32,7 +49,7 @@ function MeasureMagic(State, PauliOperators, α = 2)
         Operator = PauliOperators[PauliIndex]
         Ξ[PauliIndex] = real((1/HilbertSpaceDimension) * (conj(transpose(State[:])) * Operator * State[:])^2)
     end # FOR PauliIndex
-    Magic = (1 - α)^(-1) * log(sum(Ξ.^α)) - log(HilbertSpaceDimension)
+    Magic = (1 - α)^(-1) * log2(sum(Ξ.^α)) - log2(HilbertSpaceDimension)
     return Magic
 end
 
