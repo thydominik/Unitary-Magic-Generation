@@ -11,12 +11,12 @@ using JLD2
 
 # Loading data -------------------------------------------------------------------------------------------------------------------------------------------
 #dataPath = "D:\\Data\\Random_Unitary_Magic_Generation\\RegularUnitaryCircuitMagicSampled_N_1_Samples_1048576_Seed_1.jld2"
-dataPath = "RegularUnitaryCircuitMagicSampled_N_1_Samples_4194304_Seed_1.jld2"
-data    = JLD2.load(dataPath)
+dataPath    = "RegularUnitaryCircuitMagicSampled_N_1_Samples_4194304_Seed_1.jld2"
+data        = JLD2.load(dataPath)
 
 # Manipulation of data -------------------------------------------------------------------------------------------------------------------------------------------
     # Normalise data:
-M2      = round.(data["Magic"] ./ log(3/2), digits=14)
+M2 = round.(data["Magic"] ./ log(3/2), digits=14)
     # calculate the quantiles of the data
 a = quantile(M2, [0.25, 0.5, 0.75])
     # Create histogram for the normalised magic data
@@ -97,11 +97,12 @@ theme(:mute::Symbol;)
 
 title!(L"Mean $N = 1$", titlefontsize=20)
 xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\tilde{M}_2$",           labelfontsize=20)
+ylabel!(L"$\langle \tilde{M}_2 \rangle$",           labelfontsize=20)
 
 plot!(framestyle=:box)
 plot!(legendfontsize=10)
-
+plot!(ylims=[0, 1])
+hline!([Mean[end]], label="")
 #plot!(xscale=:log)
 savefig(p, "N1_sample_vs_mean.pdf")
 savefig(p, "N1_sample_vs_mean.png")
@@ -113,10 +114,12 @@ theme(:mute::Symbol;)
 
 title!(L"Median $N = 1$", titlefontsize=20)
 xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\tilde{M}_2$",           labelfontsize=20)
+ylabel!(L"$Median(\tilde{M}_2)$",           labelfontsize=20)
 
 plot!(framestyle=:box)
 plot!(legendfontsize=10)
+plot!(ylims=[0, 1])
+hline!([Median[end]], label="")
 
 savefig(p, "N1_sample_vs_median.pdf")
 savefig(p, "N1_sample_vs_median.png")
@@ -128,10 +131,11 @@ theme(:mute::Symbol;)
 
 title!(L"Skewness $N = 1$", titlefontsize=20)
 xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\tilde{M}_2$",           labelfontsize=20)
+ylabel!(L"$Sk(\tilde{M}_2)$",           labelfontsize=20)
 
 plot!(framestyle=:box)
 plot!(legendfontsize=10)
+plot!(ylims=[-0.5, 0.5])
 
 savefig(p, "N1_sample_vs_skewness.pdf")
 savefig(p, "N1_sample_vs_skewness.png")
@@ -143,10 +147,11 @@ theme(:mute::Symbol;)
 
 title!(L"Kurtosis $N = 1$", titlefontsize=20)
 xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\tilde{M}_2$",           labelfontsize=20)
+ylabel!(L"$Krt(\tilde{M}_2)$",           labelfontsize=20)
 
 plot!(framestyle=:box)
 plot!(legendfontsize=10)
+plot!(ylims=[-2.5, 0])
 
 savefig(p, "N1_sample_vs_kurtosis.pdf")
 savefig(p, "N1_sample_vs_kurtosis.png")
@@ -158,10 +163,11 @@ theme(:mute::Symbol;)
 
 title!(L"Variance $N = 1$", titlefontsize=20)
 xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\tilde{M}_2$",           labelfontsize=20)
+ylabel!(L"$Var(\tilde{M}_2)$",           labelfontsize=20)
 
 plot!(framestyle=:box)
 plot!(legendfontsize=10)
+plot!(ylims=[0, 0.15])
 
 savefig(p, "N1_sample_vs_variance.pdf")
 savefig(p, "N1_sample_vs_variance.png")
