@@ -5,10 +5,11 @@ using LaTeXStrings
 using StatsBase
 using JLD2
 using LinearAlgebra
+using ProgressBars
 # N = 1-6 data load
 
 data = Dict()
-for i in range(1, 5)
+for i in ProgressBar(range(1, 5))
     println(i)
     dataPath = "D:\\Data\\Random_Unitary_Magic_Generation\\N$(i)\\Regular\\RegularUnitaryCircuitMagicSampled_N_$(i)_Samples_1048576_Seed_1.jld2"
     data[i] = JLD2.load(dataPath)
@@ -17,13 +18,11 @@ end
 dataPath = "D:\\Data\\Random_Unitary_Magic_Generation\\N6\\Regular\\RegularUnitaryCircuitMagicSampled_N_6_Samples_1048576_MultiSeed_w_Ent.jld2"
 data[6] = JLD2.load(dataPath)
 
-# Going from log2 to log
+# Going from log to log2
 Magic = Dict()
 for i in 1:6
     Magic[i] = -log2.(exp.(-(data[i]["Magic"] .+ log(2^i)))) .-log2(2^i);
 end
-
-
 
 # Distributions of magic
 M = 1000;
@@ -169,7 +168,7 @@ using StatsPlots
 p = plot(dpi=400)
 xlabel!(L"$\tilde{M}_2$", labelfontsize = 20)
 ylabel!(L"$\tilde{S}$")
-histogram2d!(Magic[2] ./ log2(5/2), map(first, data[2]["Entanglement"]), bins=(range(0, 1, 500), range(0, 1, 500)), show_empty_bins=false, normalise=:pdf)
+histogram2d!(Magic[2] ./ log2(5/2), map(first, data[2]["Entanglement"]), bins=(range(0, 1, 500), range(0.45, 0.55, 2)), show_empty_bins=false, normalise=:pdf)
 k = kde((Magic[2] ./ log2(5/2), map(first, data[2]["Entanglement"])))
 contour!(k, lw=1, levels=0:0.5:40)
 plot!(xlims=[0, 1])
@@ -182,6 +181,18 @@ plot!(legendfontsize=10)
 savefig(p, "N2_ms_dist.pdf")
 savefig(p, "N2_ms_dist.png")
 
+# Cuts along maximum magic and entropy:
+h = fit(Histogram, (Magic[2] ./ log2(5/2), map(first, data[2]["Entanglement"])), (range(0,1,500), range(0, 1, 500)))
+
+SCut = h.weights[:, 240:260]
+MCut = h.weights[340:360, :]
+p = plot(range(0, 1, 499), mean(SCut, dims=2) ./ sum(mean(SCut, dims=2)), lw=2, label="Max Entanglement cut")
+plot!(range(0, 1, 499), mean(MCut, dims=1)[:] ./ sum(mean(MCut, dims=1)[:]), lw=2, label="Max Magic cut")
+xlabel!(L"$\tilde{S}$ or $\tilde{M}$")
+ylabel!(L"$\varrho(\tilde{S})$ at max($M$) or $\varrho(\tilde{M})$ at max($S$)")
+savefig(p, "N2_sm_cuts.pdf")
+savefig(p, "N2_sm_cuts.png")
+
 # N = 3
 N = 3
 p = plot(dpi=400)
@@ -193,6 +204,8 @@ end
 
 histogram2d!(Magic[N] ./ log2((2^N + 1)/2), S, bins=(range(0, 1, 500), range(0, 1, 500)), show_empty_bins=false, normalise=:pdf)
 k = kde((Magic[N] ./ log2((2^N + 1)/2), S))
+maxIndex = findmax(k.density)
+k.x[190]
 contour!(k,lw=1, levels=100)
 
 plot!(xlims=[0, 1])
@@ -209,6 +222,18 @@ plot!(legendfontsize=10)
 savefig(p, "N3_ms_dist.pdf")
 savefig(p, "N3_ms_dist.png")
 
+# Cuts along maximum magic and entropy:
+h = fit(Histogram, (Magic[N] ./ log2((2^N + 1)/2), S), (range(0,1,500), range(0, 1, 500)))
+
+SCut = h.weights[:, (Int(0.72*500) - 10):(Int(0.72*500) + 10)]
+MCut = h.weights[(Int(0.72*500) - 10):(Int(0.72*500) + 10), :]
+p = plot(range(0, 1, 499), mean(SCut, dims=2) ./ sum(mean(SCut, dims=2)), lw=2, label="Max Entanglement cut")
+plot!(range(0, 1, 499), mean(MCut, dims=1)[:] ./ sum(mean(MCut, dims=1)[:]), lw=2, label="Max Magic cut")
+xlabel!(L"$\tilde{S}$ or $\tilde{M}$")
+ylabel!(L"$\varrho(\tilde{S})$ at max($M$) or $\varrho(\tilde{M})$ at max($S$)")
+savefig(p, "N$(N)_sm_cuts.pdf")
+savefig(p, "N$(N)_sm_cuts.png")
+
 # N = 4
 N = 4
 p = plot(dpi=400)
@@ -221,6 +246,9 @@ end
 S /= log2(4)
 histogram2d!(Magic[N] ./ log2((2^N + 1)/2), S, bins=(range(0, 1, 500), range(0, 1, 500)), show_empty_bins=false, normalise=:pdf)
 k = kde((Magic[N] ./ log2((2^N + 1)/2), S))
+maxIndex = findmax(k.density)
+k.x[198]
+k.y[163]
 contour!(k,lw=1, levels=10)
 
 plot!(xlims=[0, 1])
@@ -237,19 +265,37 @@ plot!(legendfontsize=10)
 savefig(p, "N4_ms_dist.pdf")
 savefig(p, "N4_ms_dist.png")
 
+# Cuts along maximum magic and entropy:
+h = fit(Histogram, (Magic[N] ./ log2((2^N + 1)/2), S), (range(0,1,500), range(0, 1, 500)))
+
+SCut = h.weights[:, (Int(0.68*500) - 10):(Int(0.68*500) + 10)]
+MCut = h.weights[(Int(0.75*500) - 10):(Int(0.75*500) + 10), :]
+p = plot(range(0, 1, 499), mean(SCut, dims=2) ./ sum(mean(SCut, dims=2)), lw=2, label="Max Entanglement cut")
+plot!(range(0, 1, 499), mean(MCut, dims=1)[:] ./ sum(mean(MCut, dims=1)[:]), lw=2, label="Max Magic cut")
+xlabel!(L"$\tilde{S}$ or $\tilde{M}$")
+ylabel!(L"$\varrho(\tilde{S})$ at max($M$) or $\varrho(\tilde{M})$ at max($S$)")
+savefig(p, "N$(N)_sm_cuts.pdf")
+savefig(p, "N$(N)_sm_cuts.png")
+
 # N = 5
 N = 5
 p = plot(dpi=400)
 
 S = Vector{Float64}()
+
 for i in 1:(2^20)
-    push!(S, round(maximum(data[N]["Entanglement"][i][:]), digits=14))
+    push!(S, round((data[N]["Entanglement"][i][end]), digits=14))
 end
 
 S /= log2(4)
 histogram2d!(Magic[N] ./ log2((2^N + 1)/2), S, bins=(range(0, 1, 500), range(0, 1, 500)), show_empty_bins=false, normalise=:pdf)
-#k = kde((Magic[N] ./ log2((2^N + 1)/2), S))
+#
+k = kde((Magic[N] ./ log2((2^N + 1)/2), S))
+maxIndex = findmax(k.density)
+k.x[194]
+k.y[186]
 #contour!(k,lw=1, levels=10)
+
 
 plot!(xlims=[0, 1])
 plot!(ylims=[0, 1])
@@ -264,16 +310,32 @@ plot!(legendfontsize=10)
 
 savefig(p, "N5_ms_dist.pdf")
 savefig(p, "N5_ms_dist.png")
+
+# Cuts along maximum magic and entropy:
+h = fit(Histogram, (Magic[N] ./ log2((2^N + 1)/2), S), (range(0,1,500), range(0, 1, 500)))
+
+SCut = h.weights[:, (Int(0.85*500) - 10):(Int(0.85*500) + 10)]
+MCut = h.weights[(Int(0.78*500) - 10):(Int(0.78*500) + 10), :]
+p = plot(range(0, 1, 499), mean(SCut, dims=2) ./ sum(mean(SCut, dims=2)), lw=2, label="Max Entanglement cut")
+plot!(range(0, 1, 499), mean(MCut, dims=1)[:] ./ sum(mean(MCut, dims=1)[:]), lw=2, label="Max Magic cut")
+xlabel!(L"$\tilde{S}$ or $\tilde{M}$")
+ylabel!(L"$\varrho(\tilde{S})$ at max($M$) or $\varrho(\tilde{M})$ at max($S$)")
+savefig(p, "N$(N)_sm_cuts.pdf")
+savefig(p, "N$(N)_sm_cuts.png")
+
+
 # N = 6
 N = 6
 p = plot(dpi=400)
 
-S = Svn_max
-
+S = data[6]["Svn_middle"]
 
 S /= log2(8)
 histogram2d!(Magic[N] ./ log2((2^N + 1)/2), S, bins=(range(0, 1, 500), range(0, 1, 500)), show_empty_bins=false, normalise=:pdf)
 k = kde((Magic[N] ./ log2((2^N + 1)/2), S))
+maxIndex = findmax(k.density)
+k.x[191]
+k.y[146]
 contour!(k,lw=1, levels=10)
 
 
@@ -291,6 +353,18 @@ plot!(legendfontsize=10)
 
 savefig(p, "N6_ms_dist.pdf")
 savefig(p, "N6_ms_dist.png")
+
+# Cuts along maximum magic and entropy:
+h = fit(Histogram, (Magic[N] ./ log2((2^N + 1)/2), S), (range(0,1,500), range(0, 1, 500)))
+
+SCut = h.weights[:, (Int(0.85*500) - 10):(Int(0.85*500) + 10)]
+MCut = h.weights[(Int(0.78*500) - 10):(Int(0.78*500) + 10), :]
+p = plot(range(0, 1, 499), mean(SCut, dims=2) ./ sum(mean(SCut, dims=2)), lw=2, label="Max Entanglement cut")
+plot!(range(0, 1, 499), mean(MCut, dims=1)[:] ./ sum(mean(MCut, dims=1)[:]), lw=2, label="Max Magic cut")
+xlabel!(L"$\tilde{S}$ or $\tilde{M}$")
+ylabel!(L"$\varrho(\tilde{S})$ at max($M$) or $\varrho(\tilde{M})$ at max($S$)")
+savefig(p, "N$(N)_sm_cuts.pdf")
+savefig(p, "N$(N)_sm_cuts.png")
 
 # Covariance between entanglement in the middle and magic
 Cov = Vector{Float64}()
@@ -341,15 +415,27 @@ p = plot(dpi=400)
 scatter!(2:20, (Cov_Ns))
 
 # Jackknife for the covariance N = 6
-m = Magic[6]
-s = Svn_middle
+m = Magic[2]
+s = data[2]["Svn_middle"]
 sm = s .* m
 
-M_means = Vector{Float64}()
-S_means = Vector{Float64}()
-SM_means = Vector{Float64}()
-for i in ProgressBar(1:2^20)
-    push!(M_means, mean(m[[1:i-1; i+1:end]]))
-    push!(S_means, mean(s[[1:i-1; i+1:end]]))
-    push!(SM_means, mean(sm[[1:i-1; i+1:end]]))
+JKCOV = Vector{Float64}()
+for datalength in ProgressBar(5:10)
+    M_means = Vector{Float64}()
+    S_means = Vector{Float64}()
+    SM_means = Vector{Float64}()
+    for i in 1:2^
+        push!(M_means, mean(m[[1:i-1; i+1:end]]))
+        push!(S_means, mean(s[[1:i-1; i+1:end]]))
+        push!(SM_means, mean(sm[[1:i-1; i+1:end]]))
+    end
+    push!(JKCOV, mean(SM_means) - mean(M_means)*mean(S_means))
 end
+covs = Vector{Float64}()
+stds = Vector{Float64}()
+for i in ProgressBar(1:20)
+    push!(covs, cov(m[1:2^i], s[1:2^i]))
+    push!(stds, std(m[1:2^i] .* s[1:2^i]))
+end
+scatter(1:20, abs.(covs), yaxis=:log)
+scatter!(1:20, stds)
