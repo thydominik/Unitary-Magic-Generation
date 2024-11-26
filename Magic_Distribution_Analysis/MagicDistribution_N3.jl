@@ -253,12 +253,20 @@ savefig(p, "N3_sample_vs_Kurtosis.png")
 
 # Entanglement VS Magic ============================================================
 using KernelDensity
-using StatsPlots
-
+using  ProgressBars
 SVN = Vector{Float64}()
-for i in 1:(2^20)
-    push!(SVN, round(mean(data[1]["Entanglement"][i][:]), digits=14))
+for i in ProgressBar(1:(2^20))
+    push!(SVN, round(maximum(data[1]["Entanglement"][i][:]), digits=14))
 end
+COV = Vector{Float64}()
+for i in ProgressBar(1:2^10:(2^20))
+    push!(COV, cov(SVN[1:i], M2[5][1:i]))
+end
+
+
+plot(1:2^10:2^20, abs.(COV))
+plot!(yscale=:log)
+
 
 p = plot(legend=:topright)
 # scatter!(M2[1:10000], SVN[1:10000])
