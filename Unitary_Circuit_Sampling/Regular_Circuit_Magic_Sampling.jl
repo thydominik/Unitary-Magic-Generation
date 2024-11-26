@@ -42,28 +42,48 @@ function Regular_Circuit_Magic_sampling(No_Qubits::Int, No_Samples::Int, Seed::I
     PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
 
     Magic           = Vector{Float64}()
-    #Entanglement    = Vector{Vector{Float64}}()
-    #SubSystems      = Vector{Vector{Vector{Int}}}()
+    Entanglement    = Vector{Vector{Float64}}()
+    SubSystems      = Vector{Vector{Vector{Int}}}()
 
     for i in ProgressBar(1:No_Samples)    
         U = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(No_Qubits);
         State = U * Psi_0
-        #SVN, SubSys = Measure_Entanglement.calculate_entanglement(State)
+        SVN, SubSys = Measure_Entanglement.calculate_entanglement(State)
             # println(typeof(SubSys))
             # println("iteration : ", i)
             # println("Subsystem: ", SubSys)
             # println("Entropies: ", SVN)
-        #push!(Entanglement, SVN)
-        #push!(SubSystems, SubSys)
+        push!(Entanglement, SVN)
+        push!(SubSystems, SubSys)
         push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
             # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
     end
 
-    fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
-    @save fname Magic #Psi_0 #No_Samples #No_Qubits #Seed #Entanglement #SubSystems
+    #fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
+    #matwrite(fname, Dict("Magic" => Magic)) 
+    #Psi_0 #No_Samples #No_Qubits #Seed #Entanglement #SubSystems
+    return Magic, Entanglement
 end
 
-N = 1
+N = 2
 Partitions = 1
 div = Int(log2(Partitions))
-Regular_Circuit_Magic_sampling(1, 2^(22), 1)
+M, S = Regular_Circuit_Magic_sampling(N, 2^(24), 2)
+
+using StatsBase
+
+cov(M, S[:, 1])
+
+@save "N2_Magic_and entanglement" M S
+
+data = load("N2_Magic_and entanglement.jld2")
+M = data["M"];
+S1 = data["S"];
+S1 = map(first, S1);
+
+C = Vector{Float64}()
+for i in ProgressBar(1:1000:2^20)
+    push!(C, (cov(M[1:i], S1[1:i])))
+end
+
+using Plots
