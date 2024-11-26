@@ -93,8 +93,9 @@ theme(:mute::Symbol;)
 
 title!(L"Mean $N = 2$", titlefontsize=20)
 xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\tilde{M}_2$",           labelfontsize=20)
-
+ylabel!(L"$\langle \tilde{M}_2 \rangle$",           labelfontsize=20)
+plot!(ylims=[0, 1])
+hline!([Mean[end]], label="")
 plot!(framestyle=:box)
 plot!(legendfontsize=10)
 
@@ -108,10 +109,12 @@ theme(:mute::Symbol;)
 
 title!(L"Median $N = 2$", titlefontsize=20)
 xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\tilde{M}_2$",           labelfontsize=20)
+ylabel!(L"$Median(\tilde{M}_2)$",           labelfontsize=20)
 
 plot!(framestyle=:box)
 plot!(legendfontsize=10)
+plot!(ylims=[0, 1])
+hline!([Median[end]], label="")
 
 savefig(p, "N2_sample_vs_median.pdf")
 savefig(p, "N2_sample_vs_median.png")
@@ -123,10 +126,11 @@ theme(:mute::Symbol;)
 
 title!(L"Skewness $N = 2$", titlefontsize=20)
 xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\tilde{M}_2$",           labelfontsize=20)
+ylabel!(L"$Skew(\tilde{M}_2)$",           labelfontsize=20)
 
 plot!(framestyle=:box)
 plot!(legendfontsize=10)
+plot!(ylims=[-1.5, 0.5])
 
 savefig(p, "N2_sample_vs_skewness.pdf")
 savefig(p, "N2_sample_vs_skewness.png")
@@ -138,10 +142,11 @@ theme(:mute::Symbol;)
 
 title!(L"Kurtosis $N = 2$", titlefontsize=20)
 xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\tilde{M}_2$",           labelfontsize=20)
+ylabel!(L"$Kurt(\tilde{M}_2)$",           labelfontsize=20)
 
 plot!(framestyle=:box)
 plot!(legendfontsize=10)
+plot!(ylims=[-3, 3])
 
 savefig(p, "N2_sample_vs_kurtosis.pdf")
 savefig(p, "N2_sample_vs_kurtosis.png")
@@ -153,11 +158,11 @@ theme(:mute::Symbol;)
 
 title!(L"Variance $N = 2$", titlefontsize=20)
 xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\tilde{M}_2$",           labelfontsize=20)
+ylabel!(L"$Var(\tilde{M}_2)$",           labelfontsize=20)
 
 plot!(framestyle=:box)
 plot!(legendfontsize=10)
-
+plot!(ylims=[0, 0.03])
 savefig(p, "N2_sample_vs_variance.pdf")
 savefig(p, "N2_sample_vs_variance.png")
 
@@ -166,7 +171,7 @@ savefig(p, "N2_sample_vs_variance.png")
 using KernelDensity
 using StatsPlots
 
-M2      = round.(data["Magic"] ./ log(5/2), digits=14)
+M2  = round.(data["Magic"] ./ log(5/2), digits=14)
 SVN = Vector{Float64}()
 for i in 1:(2^20)
     push!(SVN, round(data["Entanglement"][i][1], digits=14))
@@ -174,13 +179,13 @@ end
 
 plot(legend=:topright)
 # scatter!(M2[1:10000], SVN[1:10000])
-
+p = histogram2d(M2, SVN, bins=(500, 500), show_empty_bins=false, normalise=:pdf, color=:plasma )
 k = kde((M2, SVN))
-p = contourf(k, c = :vik, linewidth = 1, dpi=400)
+p = contourf(k, c = :vik, linewidth = 2,dpi=400, facealpha=0)
 
 theme(:mute::Symbol;)
 
-title!(L"Kernel Density: $S_{VN}$ vs $M_2$ $N = 2$", titlefontsize=20)
+title!(L"$\varrho(S_{VN}, \tilde{M}_2)$", titlefontsize=20)
 xlabel!(L"$\tilde{M}_2$",      labelfontsize=20)
 ylabel!(L"$S_{VN}$",           labelfontsize=20)
 
@@ -190,5 +195,5 @@ plot!(legendfontsize=10)
 plot!(xscale=:lin)
 plot!(xlims=[0, 1])
 plot!(ylims=[0, log2(2)])
-savefig(p, "KDE_N2_SVN_vs_M2.pdf")
-savefig(p, "KDE_N2_SVN_vs_M2.png")
+savefig(p, "N2_SM_dist.pdf")
+savefig(p, "N2_SM_dist.png")
