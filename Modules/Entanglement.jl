@@ -43,13 +43,20 @@ function von_neumann_entropy(density_matrix::Matrix{Complex{Float64}})
     return -sum(λ -> λ > 0 ? λ * log2(λ) : 0, eigenvalues)
 end
 
-function calculate_entanglement(state_vector::Vector{Complex{Float64}})
+function calculate_entanglement(state_vector::Vector{Complex{Float64}}; subsystems::String = "All")
     No_Qubits   = Int(log2(length(state_vector)))
     Entropies   = Float64[]
     SubSystems  = Vector{Int}[]
 
-    for k in 1:(No_Qubits - 1)
-        subsystem = 1:k
+    if subsystems == "All"
+        for k in 1:(No_Qubits - 1)
+            subsystem = 1:k
+            reduced_matrix, keep_qubits = reduced_density_matrix(state_vector, collect(subsystem))
+            push!(Entropies, von_neumann_entropy(reduced_matrix))
+            push!(SubSystems, keep_qubits)
+        end
+    elseif subsystems == "Middle"
+        subsystem = 1:floor(Int, No_Qubits/2)
         reduced_matrix, keep_qubits = reduced_density_matrix(state_vector, collect(subsystem))
         push!(Entropies, von_neumann_entropy(reduced_matrix))
         push!(SubSystems, keep_qubits)

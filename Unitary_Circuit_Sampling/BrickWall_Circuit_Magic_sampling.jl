@@ -46,7 +46,7 @@ function BrickWall_Circuit_Magic_sampling(No_Qubits::Int, Depth::Int, No_Samples
     for i in ProgressBar(1:No_Samples)    
         U = Random_Unitary_Generation.Generate_BW_Unitary_Circuit(No_Qubits, Depth);
         State = U * Psi_0
-        push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
+        push!(Magic, Measure_Magic.MeasureMagic_Pure(State, PauliOperators, 2))
     end
 
     fname = "BWUnitaryCircuitMagicSampled_N_$(No_Qubits)_D_$(Depth)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
@@ -54,9 +54,9 @@ function BrickWall_Circuit_Magic_sampling(No_Qubits::Int, Depth::Int, No_Samples
 end
 
 
-N = 6
+N = 8
 D = 1
-Partitions = 2^5
+Partitions = 1
 div = Int(log2(Partitions))
 for s in 1:Partitions
     BrickWall_Circuit_Magic_sampling(N, D, 2^(20-div), s)

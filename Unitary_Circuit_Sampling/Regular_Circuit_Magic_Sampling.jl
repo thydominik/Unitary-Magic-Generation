@@ -48,27 +48,27 @@ function Regular_Circuit_Magic_sampling(No_Qubits::Int, No_Samples::Int, Seed::I
     for i in ProgressBar(1:No_Samples)    
         U = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(No_Qubits);
         State = U * Psi_0
-        SVN, SubSys = Measure_Entanglement.calculate_entanglement(State)
+        SVN, SubSys = Measure_Entanglement.calculate_entanglement(State, subsystems = "Middle")
             # println(typeof(SubSys))
             # println("iteration : ", i)
             # println("Subsystem: ", SubSys)
             # println("Entropies: ", SVN)
-        push!(Entanglement, SVN)
-        push!(SubSystems, SubSys)
-        push!(Magic, Measure_Magic.MeasureMagic(State, PauliOperators, 2))
+        #push!(Entanglement, SVN)
+        #push!(SubSystems, SubSys)
+        push!(Magic, Measure_Magic.MeasureMagic_Pure(State, PauliOperators, 2))
             # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
     end
 
-    #fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
+    fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
     #matwrite(fname, Dict("Magic" => Magic)) 
-    #Psi_0 #No_Samples #No_Qubits #Seed #Entanglement #SubSystems
+    @save fname Psi_0 No_Samples No_Qubits Seed Entanglement SubSystems
     return Magic, Entanglement
 end
 
-N = 2
+N = 3
 Partitions = 1
 div = Int(log2(Partitions))
-M, S = Regular_Circuit_Magic_sampling(N, 2^(24), 2)
+M, S = Regular_Circuit_Magic_sampling(N, 2^(20), 2)
 
 using StatsBase
 

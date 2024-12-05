@@ -123,3 +123,15 @@ plot(MQ ./ log2(3/2))
 scatter!(MM ./ log2(3/2))
 plot!(MP ./ log2(3/2))
 plot!(ylims=[0, 1])
+
+
+using JLD2
+
+data = JLD2.load("D:\\Data\\Random_Unitary_Magic_Generation\\N5\\Regular\\RegularUnitaryCircuitMagicSampled_N_5_Samples_1048576_Seed_1.jld2")
+
+histogram(data["Magic"])
+
+
+
+
+
