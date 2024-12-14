@@ -39,8 +39,8 @@ function BrickWall_Circuit_Magic_sampling(No_Qubits::Int, Depth::Int, No_Samples
     Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits)
     PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
 
-    Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
-
+    Psi_0 = 0/sqrt(2^No_Qubits) * ones(2^No_Qubits);
+    Psi_0[1] = 1
     Magic = Vector{Float64}()
 
     for i in ProgressBar(1:No_Samples)    
@@ -54,12 +54,13 @@ function BrickWall_Circuit_Magic_sampling(No_Qubits::Int, Depth::Int, No_Samples
 end
 
 
-N = 8
-D = 1
-Partitions = 1
-div = Int(log2(Partitions))
-for s in 1:Partitions
-    BrickWall_Circuit_Magic_sampling(N, D, 2^(20-div), s)
+N = 5
+for D in [9, 10, 15]
+    Partitions = 1
+    div = Int(log2(Partitions))
+    for s in 1:Partitions
+        BrickWall_Circuit_Magic_sampling(N, D, 2^(20-div), s)
+    end
 end
 
 

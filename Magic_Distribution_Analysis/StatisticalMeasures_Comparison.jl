@@ -336,7 +336,7 @@ k = kde((Magic[N] ./ log2((2^N + 1)/2), S))
 maxIndex = findmax(k.density)
 k.x[191]
 k.y[146]
-contour!(k,lw=1, levels=10)
+contour!(k, lw=1, levels=10)
 
 
 fit(Histogram, data[NIndex]["Magic"], bin_edges)
