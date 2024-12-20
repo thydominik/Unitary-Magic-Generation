@@ -2,16 +2,16 @@ using JLD2
 using Plots
 using StatsBase
 using ProgressBars
-FilePath = "D:\\Data\\Random_Unitary_Magic_Generation\\N9\\"
+FilePath = "D:\\Data\\Random_Unitary_Magic_Generation\\N10\\"
 Magic       = Vector{Float64}()
 #Svn_max     = Vector{Float64}()
 #Svn_middle  = Vector{Float64}()
 #Svn_mean    = Vector{Float64}()
 Svn         = Vector{Float64}()
 
-NoSamples = 16384
-NoSeeds = 3
-N = 9
+NoSamples = 4096
+NoSeeds = 5
+N = 10
 for seedIndex in ProgressBar(1:NoSeeds)
     datafile = "RegularUnitaryCircuitMagicSampled_N_$(N)_Samples_$(NoSamples)_Seed_$(seedIndex).jld2"
     #datafile = "BWUnitaryCircuitMagicSampled_N_7_D_$(Depth)_Samples_32768_Seed_$(seedIndex).jld2";
