@@ -135,3 +135,11 @@ histogram(data["Magic"])
 
 
 
+
+D:\Data\Random_Unitary_Magic_Generation\N8
+
+Data_1 = JLD2.load("D:\\Data\\Random_Unitary_Magic_Generation\\N8\\RegularUnitaryCircuitMagicSampled_N_8_Samples_425984.jld2")
+
+unique(Data_1["Svn"])
+
+

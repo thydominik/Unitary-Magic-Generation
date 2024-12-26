@@ -36,20 +36,22 @@ function MeasureMagic_Mixed(ϱ, σ, α = 2)
     return Magic
 end
 
-function MeasureMagic_Pure(State, PauliOperators, α = 2)
-    # Calculating the stabiliser Rényi Entropy
-    # https://doi.org/10.1103/PhysRevLett.128.050402
-
+function MeasureMagic_Pure(State, PauliOperators, α::Union{Integer, Float64, Vector{<:Number}} = 2)
     No_Qubits = Int(log2(length(State)))
-
     HilbertSpaceDimension = 2^No_Qubits
     
     Ξ = Vector{Float64}(undef, 4^No_Qubits)
     for PauliIndex in 1:4^No_Qubits
         Operator = PauliOperators[PauliIndex]
         Ξ[PauliIndex] = real((1/HilbertSpaceDimension) * (conj(transpose(State[:])) * Operator * State[:])^2)
-    end # FOR PauliIndex
-    Magic = (1 - α)^(-1) * log2(sum(Ξ.^α)) - log2(HilbertSpaceDimension)
+    end
+    
+    if α isa Number
+        Magic = (1 - float(α))^(-1) * log2(sum(Ξ.^float(α))) - log2(HilbertSpaceDimension)
+    else
+        Magic = [(1 - float(α_i))^(-1) * log2(sum(Ξ.^float(α_i))) - log2(HilbertSpaceDimension) for α_i in α]
+    end
+    
     return Magic
 end
 
