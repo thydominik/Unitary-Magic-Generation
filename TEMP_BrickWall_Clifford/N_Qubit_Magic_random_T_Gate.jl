@@ -213,7 +213,43 @@ include(filepath)
 using .Random_Unitary_Generation
 using .Measure_Magic
 
-for NoQ = 2:9
+for NoQ = 2:8
+    for Depth = [5*NoQ, 10*NoQ]
+        No_Qubits = NoQ;
+        D = Depth;
+
+        CLFGates, CLFLabels = Generate_All_2_Qubit_Clifford_Gates();
+        TGate = sparse([[1 0]; [0 exp(im * pi/4)]]);
+        Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits);
+        PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits);
+        Random.seed!(1);
+        No_Samples = 2^16
+        #Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
+        Psi_0 = zeros(2^No_Qubits); Psi_0[1] = 1;
+
+        for nT in 1:D
+            Magic = Vector{Float64}()
+            for iterations in ProgressBar(1:No_Samples)
+                PossibleTGateCoordinates = generate_T_gate_coordinates(No_Qubits, D);
+                TGatePlacement = zeros(Int, nT, 2)
+                for i in 1:nT
+                    TGateIndex = rand(1:size(PossibleTGateCoordinates, 1));
+                    TGatePlacement[i, :] = PossibleTGateCoordinates[TGateIndex, :];
+                    PossibleTGateCoordinates = delete_row(PossibleTGateCoordinates, TGateIndex);
+                end
+
+                Gate = Build_CLF_BrickWall_Circuit_with_T(No_Qubits, D, TGatePlacement, CLFGates)
+                Psi = Gate * Psi_0
+                push!(Magic, Measure_Magic.MeasureMagic_Pure(Psi, PauliOperators, 2))
+            end
+            fname = "CLF_BW_N_$(No_Qubits)_D_$(D)_NT_$(nT)_Samples_$(No_Samples).mat"
+            matwrite(fname, Dict("Magic" => Magic))
+
+        end
+    end
+end
+
+for NoQ = 9:10
     for Depth = [5*NoQ, 10*NoQ]
         No_Qubits = NoQ;
         D = Depth;
