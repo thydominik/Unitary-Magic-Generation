@@ -210,20 +210,20 @@ No_Qubits = 4;
 D = No_Qubits^2;
 
 CLFGates, CLFLabels = Generate_All_2_Qubit_Clifford_Gates();
-ϑ = pi/10;
-RotGate = [[cos(ϑ) -sin(ϑ)];[sin(ϑ) cos(ϑ)]]; # sparse([[1 0]; [0 exp(im * pi/4)]]);
+ϑ = pi/4;
+#RotGate = [[cos(ϑ) -sin(ϑ)];[sin(ϑ) cos(ϑ)]]; # sparse([[1 0]; [0 exp(im * pi/4)]]);
+RotGate = sparse([[1 0]; [0 exp(im * pi/4)]]);
+
 Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits);
 PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits);
 Random.seed!(1);
 No_Samples = 2^15
-Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
+Psi_0 = zeros(2^No_Qubits);
+Psi_0[1] = 1;
 
-for nrt in 0:No_Qubits
-    Eigvals = Vector{Vector{ComplexF64}}()
-        RotPos = sample(1:No_Qubits, nrt; replace=false)
+for nrt in 8
+    RotPos = sample(1:No_Qubits, nrt; replace=false)
     for iterations in ProgressBar(1:No_Samples)
-
-
         Gate = Build_CLF_BrickWall_Circuit_with_T(No_Qubits, D, [[0]], CLFGates)
         for i in 1:nrt
             Gate = Gate * kron(I(2^(i - 1)), kron(RotGate, I(2^(No_Qubits - i))));
