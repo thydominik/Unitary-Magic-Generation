@@ -259,11 +259,11 @@ for NoQ = 9:10
         Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits);
         PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits);
         Random.seed!(1);
-        No_Samples = 2^12
+        No_Samples = 2^10
         #Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
         Psi_0 = zeros(2^No_Qubits); Psi_0[1] = 1;
 
-        for nT in 1:D
+        for nT in 1:3:D
             Magic = Vector{Float64}()
             for iterations in ProgressBar(1:No_Samples)
                 PossibleTGateCoordinates = generate_T_gate_coordinates(No_Qubits, D);
