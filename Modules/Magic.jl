@@ -47,12 +47,17 @@ function MeasureMagic_Pure(State, PauliOperators, α::Union{Integer, Float64, Ve
     end
     
     if α isa Number
-        Magic = (1 - float(α))^(-1) * log2(sum(Ξ.^float(α))) - log2(HilbertSpaceDimension)
+        if α == 1
+            Magic = 1 - HilbertSpaceDimension * sum(Ξ.^2)
+        else
+            Magic = (1 - float(α))^(-1) * log2(sum(Ξ.^float(α))) - log2(HilbertSpaceDimension)
+        end
+        
     else
         Magic = [(1 - float(α_i))^(-1) * log2(sum(Ξ.^float(α_i))) - log2(HilbertSpaceDimension) for α_i in α]
     end
     
-    return Magic
+    return Magic, Ξ
 end
 
 function GenerateAllPauliStrings(No_Qubits::Int)
