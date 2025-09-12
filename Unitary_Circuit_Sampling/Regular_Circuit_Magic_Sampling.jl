@@ -55,7 +55,8 @@ function Regular_Circuit_Magic_sampling(No_Qubits::Int, No_Samples::Int, Seed::I
             # println("Entropies: ", SVN)
         #push!(Entanglement, SVN)
         #push!(SubSystems, SubSys)
-        push!(Magic, Measure_Magic.MeasureMagic_Pure(State, PauliOperators, [3, 3, 4]))
+    
+        push!(Magic, Measure_Magic.MeasureMagic_Pure(State, PauliOperators)[1])
             # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
     end
 
@@ -65,7 +66,7 @@ function Regular_Circuit_Magic_sampling(No_Qubits::Int, No_Samples::Int, Seed::I
     return Magic, Entanglement
 end
 
-N = 3
+N = 7
 Partitions = 1
 div = Int(log2(Partitions))
 M, S = Regular_Circuit_Magic_sampling(N, 2^(20), 2)
