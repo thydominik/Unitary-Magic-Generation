@@ -1,3 +1,9 @@
+###
+# Develop is an actively changed, non-essential part of the code.
+# It is for me to play around with functions, tests, and check datafiles before usage.
+# Anything found here is not part of the core library and cannot be taken seriously, not to mention these parts must be prone to bugs.
+###
+
 using LinearAlgebra
 using Trace
 const P = [
