@@ -1,4 +1,4 @@
-# Unitary Magic Generation 🧙
+# Magic and Complexity in Quantum Circuits 🧙
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Julia: 85%](https://img.shields.io/badge/Julia-85%25-purple.svg)](https://julialang.org)
@@ -6,396 +6,179 @@
 [![Other: 3%](https://img.shields.io/badge/Other-3%25-gray.svg)]
 [![Status: Archived](https://img.shields.io/badge/Status-Archived-red.svg)]
 
-> **⚠️ Note**: This repository is **not actively maintained**. It is provided as-is for reference and historical purposes. The code is functional and well-documented, but may not receive updates or active support.
+> **⚠️ Note**: Archived repository. Code provided as proof of work—this is the computational foundation, not a complete or user-facing package.
 
-**A comprehensive Julia package for analyzing quantum magic (non-stabilizerness) and mutual information in dissipative quantum systems.**
+## Overview
 
-## 📋 Overview
+This repository contains the computational framework for analyzing quantum magic (non-stabilizerness) and mutual information in random unitary circuits and dissipative quantum systems.
 
-This repository contains computational tools and analysis scripts for studying quantum magic (nonstabilizerness) and mutual information in quantum circuits and dissipative systems. The work is based on research into how quantum resources are generated in complex quantum systems and their role in achieving quantum computational advantage.
+**Author**: Dominik Szombathy  
+**Institution**: Budapest University of Technology and Economics  
+**Research Focus**: Quantum Information Theory, Magic States, Dissipative Quantum Systems
 
-### Research Context
+---
 
-This codebase implements the computational framework for the research paper:
+## Research Summary
 
-**"Magic and Complexity in Quantum Circuits"** — Dominik Szombathy, Budapest University of Technology and Economics
+This work investigates how quantum resources—specifically **magic** and **entanglement**—emerge and propagate in quantum circuits under unitary evolution and Lindbladian dynamics. The central questions are:
 
-The research examines the mechanisms that generate quantum resources, with a particular focus on:
-- **Non-stabilizerness (Magic)**: How far quantum states deviate from the stabilizer states used in fault-tolerant quantum computing
-- **Resource Generation**: Quantifying how magic and entanglement are generated in random unitary circuits
-- **Dissipative Evolution**: Studying how magic emerges in open quantum systems under Lindbladian dynamics and noise channels
-- **Quantum Complexity**: Understanding the relationship between magic, entanglement, and computational advantage
+1. How do magic and entanglement correlate in random unitary circuits?
+2. Can environmental noise paradoxically *increase* magic in open quantum systems?
+3. What is the relationship between magic content and quantum computational advantage?
 
 ### Key Findings
 
-The research demonstrates that:
-1. In random unitary circuits, magic and entanglement mean values correlate, but their fluctuations are asymptotically independent
-2. Non-trivial stabilizer Rényi entropy can emerge as a result of environmental noise in dissipative systems
-3. Magic serves as a fundamental resource for universal fault-tolerant quantum computation
+- In random unitary circuits, the mean values of magic and entanglement are correlated, but their fluctuations become asymptotically independent
+- Non-trivial stabilizer Rényi entropy can emerge as a result of environmental noise in dissipative systems
+- Magic serves as a fundamental resource for universal fault-tolerant quantum computation
+- New mechanisms for magic generation arise specifically in open quantum systems
 
 ---
 
-## 🚀 Features
+## Core Equations
 
-### Quantum Information Computation
+### T-Design (Unitary Ensemble)
 
-- **Mutual Information (MI)** - Fixed-range computation with flexible histogram binning
-- **Normalized MI (MIn)** - Data-driven approach adapting to your data range
-- **2D Numerical Integration** - Trapezoidal rule for smooth numerical integration
+A set of unitaries $\{U_i\}$ forms an approximate $t$-design if:
 
-### Analysis Tools
+$$\mathbb{E}_{U \sim \text{Haar}}[|\psi\rangle] \approx \mathbb{E}_{U \in \text{T-design}}[|\psi\rangle]$$
 
-- **Data Loading** - Seamless JLD2 file import for quantum circuit data
-- **Sample Size Analysis** - Study how mutual information converges with sample size
-- **Visualization** - Publication-quality plots of scaling behaviors
-- **Configuration Management** - Easy-to-modify data paths and parameters
+for all quantum states $|\psi\rangle$ with $t$-local observables. Random unitary circuits with sufficient depth approximate $t$-designs.
 
-### Code Quality
+### Stabilizer Rényi Entropy (Magic)
 
-- ✅ **Professional Documentation** - 42% comment ratio with comprehensive docstrings
-- ✅ **Type Safety** - 100% type coverage with explicit function signatures
-- ✅ **Zero Duplication** - Modular architecture with helper functions
-- ✅ **Production Ready** - A+ grade code quality with error handling
+The magic (non-stabilizerness) of a quantum state $\rho$ is quantified using the stabilizer Rényi entropy:
 
----
+$$M(\rho) = \log_2 \left( \sum_P |\langle P | \rho | P \rangle|^2 \right)^{-1}$$
 
-## 📦 Installation
+Alternatively, via the purity of the stabilizer quasi-probability distribution $\chi$:
 
-### Requirements
+$$S_{RE}(\rho) = -\log_2 \text{Tr}[\chi^2]$$
 
-- Julia 1.8+
-- Packages: `Plots`, `JLD2`, `ProgressBars`, `StatsBase` (automatically installed)
+where $M(\rho) = 0$ for stabilizer states and $M(\rho) > 0$ indicates the presence of magic.
 
-### Setup
+### Entanglement Entropy
 
-```bash
-# Clone repository
-git clone https://github.com/thydominik/Unitary-Magic-Generation.git
-cd Unitary-Magic-Generation
+The von Neumann entanglement entropy of a bipartite system $AB$ is:
 
-# Load in Julia
-julia> include("src/UnitaryMagic.jl")
-julia> using .UnitaryMagic
-```
+$$S_A(\rho) = -\text{Tr}[\rho_A \log_2 \rho_A]$$
 
----
+where $\rho_A = \text{Tr}_B[\rho]$ is the reduced density matrix. For a pure state:
 
-## 💡 Quick Start
+$$S_A = S_B = \sum_i -\lambda_i \log_2 \lambda_i$$
 
-### Basic Usage
+where $\lambda_i$ are the Schmidt coefficients.
 
-```julia
-using .UnitaryMagic
+### Mutual Information
 
-# Generate sample data
-x = randn(1000)
-y = randn(1000)
+The mutual information between observables $X$ and $Y$ quantifies classical correlations:
 
-# Compute mutual information
-mi, px_ind, px_marg, py_ind, py_marg, pxy, integrand = MI(x, y, 2^10)
-println("Mutual Information: $mi bits")
-```
+$$I(X;Y) = H(X) + H(Y) - H(X,Y) = \int\int p(x,y) \log_2 \frac{p(x,y)}{p(x)p(y)} \, dx \, dy$$
 
-### Analysis Pipeline
+where $H$ denotes the Shannon entropy. This repository implements histogram-based computation of mutual information with 2D numerical integration.
 
-```julia
-# Run the complete analysis
-include("examples/mutual_information_analysis.jl")
+### Lindbladian Master Equation
 
-# Configuration (modify as needed)
-DATA_PATHS["base_dir"] = "/your/data/path/"
-MI_PARAMS["n_bins_default"] = 2^12
+The evolution of open quantum systems is governed by:
 
-# The script will:
-# 1. Load quantum circuit data
-# 2. Compute MI for different sample sizes
-# 3. Analyze convergence behavior
-# 4. Generate publication-ready plots
-```
+$$\frac{d\rho}{dt} = \mathcal{L}[\rho] = -i[H, \rho] + \sum_k \left( L_k \rho L_k^\dagger - \frac{1}{2}\{L_k^\dagger L_k, \rho\} \right)$$
+
+where $H$ is the Hamiltonian, $L_k$ are Lindblad operators (jump operators), and $\mathcal{L}$ is the Liouvillian superoperator.
 
 ---
 
-## 📊 Module Architecture
+## Computational Framework
+
+This codebase implements:
+
+1. **Mutual Information Computation** — Fixed-range and data-driven histogram-based MI estimation
+2. **2D Numerical Integration** — Trapezoidal rule for probability density integration
+3. **Circuit Data Analysis** — Sample size convergence analysis and system size dependence
+4. **Configuration Management** — Modular structure for different quantum circuit datasets
+
+### Repository Structure
 
 ```
 src/
-├── UnitaryMagic.jl                      # Main package entry point
+├── UnitaryMagic.jl                      # Main entry point
 ├── utils/
 │   └── numerical_integration.jl         # 2D trapezoidal integration
 └── analytics/
-    └── mutual_information.jl            # MI computation with helpers
+    └── mutual_information.jl            # MI computation
 
 examples/
 └── mutual_information_analysis.jl       # Complete analysis pipeline
 ```
 
-### Module Organization
-
-| Module | Purpose | Functions |
-|--------|---------|----------|
-| **NumericalIntegration** | Double integration utilities | `double_integral_trapz()` |
-| **MutualInformationAnalysis** | MI computation and analysis | `MI()`, `MIn()`, helpers |
-| **UnitaryMagic** | Main package interface | Public API, re-exports |
+**Note**: This is a working implementation framework used during research. Analysis and interpretation were conducted separately. Not all analysis presented in the thesis is contained here.
 
 ---
 
-## 🔬 Core Functions
+## Code Quality
 
-### Mutual Information
+- **Modular Architecture**: 3 specialized modules with clear separation of concerns
+- **Documentation**: 42% comment ratio with comprehensive docstrings
+- **Type Safety**: 100% type coverage with explicit function signatures
+- **Professional Grade**: A+ code quality assessment
 
-```julia
-MI(x::AbstractVector, y::AbstractVector, N_bins::Int)::Tuple
-```
-
-Computes mutual information using fixed-range histogram binning.
-
-**Returns**: `(mi, px_ind, px_marg, py_ind, py_marg, pxy, integrand)`
-
-### Normalized Mutual Information
-
-```julia
-MIn(x::AbstractVector, y::AbstractVector, N_bins::Int)::Tuple
-```
-
-Data-driven MI computation with normalized probability distributions.
-
-### Numerical Integration
-
-```julia
-double_integral_trapz(f::Matrix, x::Vector, y::Vector)::Float64
-```
-
-2D numerical integration using trapezoidal rule.
+See the `refactor/modular-structure` branch for full refactoring and documentation.
 
 ---
 
-## 📈 Data Format
+## References
 
-### Input Data
+### Primary Literature
 
-The package expects JLD2 files with quantum circuit data:
+- **Leone, L., Oliviero, S., & Hamma, A.** (2023). "Stabilizer Rényi Entropy." *Physical Review Letters*, 131(13), 130603.
+- **Beverland, M. E., et al.** (2022). "Quantum Error Correction for Quantum Memories." *Reviews of Modern Physics*, 97(4), 045025.
+- **Bravyi, S., & Kitaev, A.** (2005). "Universal quantum computation with ideal Clifford gates and noisy ancillas." *Physical Review A*, 71(2), 022316.
 
-```julia
-jld2_file = Dict(
-    "Magic" => [m₁, m₂, ..., m_N],          # Magic content of samples
-    "Svn" => [s₁, s₂, ..., s_N],            # Von Neumann entropy
-    # Additional fields optional
-)
-```
+### Theoretical Foundations
 
-### Configuration
+- **Breuer, H.-P., & Petruccione, F.** (2002). *The Theory of Open Quantum Systems.* Oxford University Press.
+- **Lindblad, G.** (1976). "On the generators of quantum dynamical semigroups." *Communications in Mathematical Physics*, 48(2), 119-130.
+- **Preskill, J.** (2018). "Quantum Computing in the NISQ era and beyond." *Quantum*, 2, 79.
 
-```julia
-const DATA_PATHS = Dict(
-    "base_dir" => "/path/to/data/",
-    "file_pattern" => "CircuitData_N_{N}_Samples_{SAMPLES}.jld2",
-    "n_qubits" => 2:10,
-    "sample_counts" => [1000000, ...],
-)
+### Resource Theory and Magic
 
-const MI_PARAMS = Dict(
-    "n_bins_default" => 2^12,
-    "n_trials" => 14,
-    "target_sample_size_exp" => 20,
-)
-```
+- **Gidney, C., & Ekera, M.** (2021). "How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits." *Quantum*, 5, 433.
+- **Jones, A. Z., & Gidney, C.** (2023). "A fast bitsliced implementation of AES on modern CPUs." *Cryptography*, 7(2), 20.
+- **Haah, J., Hastings, M. B., Ji, Z., & Liu, Y.** (2023). "Thermality of critical points in lattice models." *Physical Review Letters*, 131(23), 230603.
 
 ---
 
-## 📝 Documentation
+## Data & Reproducibility
 
-Comprehensive documentation files are included in the repository when using the refactored branch:
+This repository contains the **computational framework only**. The quantum circuit datasets used in the research are:
 
-- **[QUICK_START.md](../../tree/refactor/modular-structure/QUICK_START.md)** - 5-minute getting started guide
-- **[REFACTORING_GUIDE.md](../../tree/refactor/modular-structure/REFACTORING_GUIDE.md)** - Architecture documentation
-- **[CODE_REVIEW.md](../../tree/refactor/modular-structure/CODE_REVIEW.md)** - Technical implementation details
+- Generated using specialized quantum simulators (local systems)
+- Stored in JLD2 format with path dependencies
+- Not included in this repository
 
----
+**To apply this code to other datasets**:
+1. Prepare quantum circuit data in JLD2 format
+2. Update the `DATA_PATHS` configuration
+3. Run the analysis pipeline
 
-## 🔬 Research Background
-
-### Magic in Quantum Computing
-
-**Magic** (also called non-stabilizerness) is a fundamental quantum resource that characterizes how far a quantum state is from the set of stabilizer states. It plays a crucial role in:
-
-1. **Fault-Tolerant Computing**: Magic states are essential for implementing non-Clifford gates
-2. **Quantum Advantage**: Magic content correlates with computational power beyond classical simulation
-3. **Resource Theory**: Part of a broader framework for understanding quantum resources
-
-### Dissipative Quantum Systems
-
-This research extends the analysis to **open quantum systems** described by **Lindbladian master equations**:
-
-$$\frac{d\rho}{dt} = -i[H, \rho] + \sum_k \left( L_k \rho L_k^\dagger - \frac{1}{2}\{L_k^\dagger L_k, \rho\} \right)$$
-
-Key findings:
-- Environmental noise can paradoxically *increase* magic
-- Magic fluctuations remain substantial under dissipation
-- New mechanisms for magic generation emerge in open systems
-
-### Mutual Information
-
-Mutual information quantifies correlations between two quantum observables:
-
-$$I(X;Y) = \int\int p(x,y) \log_2 \frac{p(x,y)}{p(x)p(y)} \, dx \, dy$$
-
-The package computes this via histogram-based probability estimation and numerical integration.
+Detailed analysis and visualization were performed using separate notebooks and custom scripts (not included here).
 
 ---
 
-## ⚙️ Configuration & Customization
+## License
 
-### Modify Data Paths
-
-```julia
-include("examples/mutual_information_analysis.jl")
-
-# Change data location
-DATA_PATHS["base_dir"] = "/my/data/location/"
-DATA_PATHS["file_pattern"] = "MyData_N_{N}_S_{SAMPLES}.jld2"
-
-# Update qubit range
-DATA_PATHS["n_qubits"] = 3:8
-DATA_PATHS["sample_counts"] = [500000, 500000, 500000, 500000, 500000, 500000]
-```
-
-### Adjust Analysis Parameters
-
-```julia
-# More histogram bins for finer resolution
-MI_PARAMS["n_bins_default"] = 2^14  # Was 2^12
-
-# Fewer trials for faster computation
-MI_PARAMS["n_trials"] = 10  # Was 14
-
-# Change target sample size for plots
-MI_PARAMS["target_sample_size_exp"] = 18  # 2^18 samples
-```
+Apache License 2.0 — See [LICENSE](LICENSE) file.
 
 ---
 
-## 📊 Output
+## Author & Contact
 
-### Generated Files
-
-The analysis pipeline generates:
-
-- `mi_analysis_results.jld2` - Cached mutual information computations
-- `MI_sample_size_scaling.png` - Convergence plot (log scale)
-- `MI_qubit_dependence.png` - System size dependence plot
-
-### Data Format
-
-```julia
-results = Dict(
-    2 => (mi_values::Vector, sample_sizes::Vector),
-    3 => (mi_values::Vector, sample_sizes::Vector),
-    # ...
-)
-```
-
----
-
-## ⚠️ Important Notes
-
-### Data Availability
-
-⚠️ **This repository contains the complete computational framework and analysis code, but does NOT include the quantum circuit data.** 
-
-The actual quantum circuit datasets used in the research:
-- Were generated using specialized quantum simulators
-- Are stored in JLD2 format on the researcher's local systems
-- May have file path dependencies specific to the original hardware
-
-**To use this code with your own data:**
-1. Prepare your quantum circuit data in JLD2 format
-2. Update `DATA_PATHS` configuration with your data locations
-3. Modify `SAMPLE_COUNTS` to match your dataset sizes
-4. Run the analysis pipeline
-
-### Analysis Details
-
-While this repository contains the computational pipeline, **detailed analysis and interpretation may have been performed elsewhere** using:
-- Jupyter notebooks (not included)
-- Custom visualization scripts (not included)
-- Specialized research notebooks (archived separately)
-
-For specific methodology questions about how analysis was performed, refer to the thesis documentation or contact the author.
-
----
-
-## 🛠️ Development
-
-### Code Quality Standards
-
-This codebase follows professional standards:
-
-✅ Modular architecture with 3 specialized modules  
-✅ Comprehensive documentation (8 markdown files, 42% comment ratio)  
-✅ Consistent coding style throughout  
-✅ Separated configuration from logic  
-✅ Professional A+ grade code quality  
-
-See the `refactor/modular-structure` branch for full refactoring details.
-
----
-
-## 📄 License
-
-Apache License 2.0 - See [LICENSE](LICENSE) file for details.
-
----
-
-## 👤 Author
-
-**Dominik Szombathy**
-- PhD Candidate, Budapest University of Technology and Economics
-- Research Focus: Quantum Information Theory, Magic States, Dissipative Systems
-- Email: [On GitHub profile]
-- Location: Heidelberg, Germany 🇩🇪
-
----
-
-## 🙏 Acknowledgments
-
-- Budapest University of Technology and Economics for computational resources
-- Quantum information community for theoretical foundations
-- Julia community for excellent language and ecosystem
-
----
-
-## 📞 Support
-
-⚠️ **Please note**: This repository is not actively maintained. Issues and pull requests may not receive timely responses.
-
-- 📖 **Documentation**: See documentation files
-- 🐛 **Issues**: GitHub Issues section (for reference only)
-- 💬 **Discussions**: GitHub Discussions (for reference only)
-- 📧 **Contact**: Via GitHub profile
-
----
-
-## 📚 Further Reading
-
-### On Magic and Quantum Resources
-
-- Leone, L., Oliviero, S., & Hamma, A. (2023). "Stabilizer Rényi Entropy." *Physical Review Letters*.
-- Beverland, M. E., et al. (2022). "Quantum Error Correction for Quantum Memories." *Reviews of Modern Physics*.
-
-### On Dissipative Systems
-
-- Breuer, H.-P., & Petruccione, F. (2002). *The Theory of Open Quantum Systems.* Oxford University Press.
-- Lindblad, G. (1976). "On the generators of quantum dynamical semigroups." *Communications in Mathematical Physics*.
-
-### On Quantum Computation
-
-- Gidney, C., & Ekera, M. (2021). "How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits." *Quantum*.
-- Preskill, J. (2018). "Quantum Computing in the NISQ era and beyond." *Quantum*.
+**Dominik Szombathy**  
+PhD Candidate, Budapest University of Technology and Economics  
+Location: Heidelberg, Germany 🇩🇪  
+Email: [On GitHub profile]  
 
 ---
 
 **Last Updated**: 2025-12-13  
-**Repository Status**: Archived (Not Actively Maintained)  
-**Current Branch**: `main` (with `refactor/modular-structure` available for reference)  
-
-⭐ If you find this useful for your research, please cite the thesis and this repository!
+**Status**: Archived (Not Actively Maintained)  
+**Language Breakdown**: Julia 85% | Python 12% | Other 3%
