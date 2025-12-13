@@ -1,4 +1,4 @@
-# Magic and Complexity in Quantum Circuits 🧙
+# Magic and Entanglement in Quantum Circuits 🧙
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Julia: 85%](https://img.shields.io/badge/Julia-85%25-purple.svg)](https://julialang.org)
@@ -13,8 +13,8 @@
 This repository contains the computational framework for analyzing quantum magic (non-stabilizerness) and mutual information in random unitary circuits and dissipative quantum systems.
 
 **Author**: Dominik Szombathy  
-**Institution**: Budapest University of Technology and Economics  
-**Research Focus**: Quantum Information Theory, Magic States, Dissipative Quantum Systems
+**Institution during work**: Budapest University of Technology and Economics  
+**Research Focus**: Quantum Information Theory, Magic States, Magic & Entanglement relationship
 
 ---
 
