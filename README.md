@@ -1,7 +1,9 @@
 # Unitary Magic Generation 🧙
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Language: Julia](https://img.shields.io/badge/Language-Julia-purple.svg)](https://julialang.org)
+[![Julia: 85%](https://img.shields.io/badge/Julia-85%25-purple.svg)](https://julialang.org)
+[![Python: 12%](https://img.shields.io/badge/Python-12%25-blue.svg)](https://python.org)
+[![Other: 3%](https://img.shields.io/badge/Other-3%25-gray.svg)]
 [![Status: Active](https://img.shields.io/badge/Status-Active-brightgreen.svg)]
 
 **A comprehensive Julia package for analyzing quantum magic (non-stabilizerness) and mutual information in dissipative quantum systems.**
