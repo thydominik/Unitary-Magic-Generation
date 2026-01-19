@@ -1,6 +1,6 @@
 name = "UnitaryMagicGeneration"
 uuid = "1234abcd-5678-90ef-ghij-1234567890ab"
-authors = ["Dominik Szombathy <dominik.szombathy@nokia.com>"]
+authors = ["Dominik Szombathy <szombathy.dominik@gmail.com>"]
 version = "0.1.0"
 
 [deps]
