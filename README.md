@@ -1,9 +1,7 @@
 # Magic and Entanglement in Quantum Circuits 🧙
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Julia: 85%](https://img.shields.io/badge/Julia-85%25-purple.svg)](https://julialang.org)
-[![Python: 12%](https://img.shields.io/badge/Python-12%25-blue.svg)](https://python.org)
-[![Other: 3%](https://img.shields.io/badge/Other-3%25-gray.svg)]
+[![Julia: 100%](https://img.shields.io/badge/Julia-85%25-purple.svg)](https://julialang.org)
 [![Status: Archived](https://img.shields.io/badge/Status-Archived-red.svg)]
 
 > **⚠️ Note**: Archived repository. Code provided as proof of work—this is the computational foundation, not a complete or user-facing package.
