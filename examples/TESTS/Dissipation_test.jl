@@ -9,7 +9,7 @@ using StatsBase: sample
 using Plots
 
 # Unitary matrices
-filepath = joinpath("Modules", "Magic.jl")
+filepath = joinpath("../src/Modules", "Magic.jl")
 include(filepath)
 # Magic
 filepath = joinpath("Modules", "Random_Unitaries.jl")
