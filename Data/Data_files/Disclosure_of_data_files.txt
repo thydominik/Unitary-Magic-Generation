@@ -1,6 +1,0 @@
-As this work is based on circuit averages, the amount of data needed for the analysis is way beyond the storage capabiltites of a \
-free tier github profile.
-
-Here I will only store data that cannot be hard coded into the code and/or small enough that it would make sense to do so, if there is any.
-
-Data used in the article and in it's conclusions are in the format of .jld2 and .mat
