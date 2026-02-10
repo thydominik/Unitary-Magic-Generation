@@ -6,9 +6,9 @@ Core routines to quantify stabilizer ("magic") properties of quantum states.
 This module implements utilities to:
 - Generate Pauli strings on `n` qubits.
 - Build tensor-product Pauli operators.
-- Compute magic measures for pure and mixed states based on stabiliser Rényi entropy.
+- Compute magic measures for pure and mixed states based on stabiliser Renyi entropy.
 
-The formulas follow the stabiliser Rényi entropy framework introduced in:
+The formulas follow the stabiliser Renyi entropy framework introduced in:
 - https://doi.org/10.1103/PhysRevLett.128.050402
 
 Notes
@@ -42,10 +42,10 @@ function _n_qubits_from_state_length(len::Integer)::Int
 end
 
 """Infer number of qubits from a density-matrix size; throws on invalid sizes."""
-function _n_qubits_from_density_matrix(ρ::AbstractMatrix)::Int
-    size(ρ, 1) == size(ρ, 2) || throw(ArgumentError("density matrix must be square, got size $(size(ρ))"))
-    _is_power_of_two(size(ρ, 1)) || throw(ArgumentError("density matrix dimension must be a power of two, got $(size(ρ, 1))"))
-    return Int(round(log2(size(ρ, 1))))
+function _n_qubits_from_density_matrix(rho::AbstractMatrix)::Int
+    size(rho, 1) == size(rho, 2) || throw(ArgumentError("density matrix must be square, got size $(size(rho))"))
+    _is_power_of_two(size(rho, 1)) || throw(ArgumentError("density matrix dimension must be a power of two, got $(size(rho, 1))"))
+    return Int(round(log2(size(rho, 1))))
 end
 
 # Precomputed single-qubit Pauli matrices (sparse), returned by reference.
@@ -61,7 +61,7 @@ const _PAULI_Z = sparse(ComplexF64[1 0; 0 -1])
 """
     generate_all_pauli_strings(n_qubits::Integer) -> Vector{String}
 
-Generate all Pauli strings on `n_qubits` qubits using the alphabet `{"I","X","Y","Z"}`.
+Generate all Pauli strings on `n_qubits` qubits using the alphabet `{I,X,Y,Z}`.
 
 Parameters
 - `n_qubits`: Number of qubits (must be positive).
@@ -88,7 +88,7 @@ Accepted labels
 - `'Z'`, `"Z"`, or `3`
 
 Returns
-- A 2×2 sparse matrix of element type `ComplexF64`.
+- A 2x2 sparse matrix of element type `ComplexF64`.
 """
 function pauli_matrix(which)::SparseMatrixCSC{ComplexF64,Int}
     if which isa AbstractString
@@ -120,7 +120,7 @@ Parameters
 - `n_qubits`: Number of qubits (must be positive).
 
 Returns
-- A vector of sparse matrices of size `2^n_qubits × 2^n_qubits`.
+- A vector of sparse matrices of size `2^n_qubits x 2^n_qubits`.
 
 Notes
 - This function allocates `length(strings)` matrices and can be expensive for large `n_qubits`.
@@ -146,92 +146,92 @@ function pauli_operator_list(strings::AbstractVector{<:AbstractString}, n_qubits
 end
 
 """
-    measure_magic_pure(state, pauli_ops, α=2) -> (magic, ξ)
+    measure_magic_pure(state, pauli_ops, alpha=2) -> (magic, xi)
 
-Compute magic of a pure state using the stabiliser Rényi entropy construction.
+Compute magic of a pure state using the stabiliser Renyi entropy construction.
 
 Parameters
 - `state`: State vector of length `2^n`.
 - `pauli_ops`: Vector of Pauli operators on `n` qubits (e.g., from `pauli_operator_list`).
-- `α`: Rényi parameter. Can be a single real number or a vector of real numbers.
+- `alpha`: Renyi parameter. Can be a single real number or a vector of real numbers.
 
 Returns
-- `magic`: A scalar if `α` is scalar, otherwise a vector.
-- `ξ`: A vector with components
-  \(ξ_P = \frac{1}{2^n} (\langle ψ | P | ψ \rangle)^2\) (real-valued as returned by the implementation).
+- `magic`: A scalar if `alpha` is scalar, otherwise a vector.
+- `xi`: A vector with components
+  `xi_P = (1 / 2^n) * (<psi|P|psi>)^2` (real-valued as returned by the implementation).
 
 Notes
 - This function assumes the caller provides a properly normalized `state`.
-- For `α == 1`, the implementation uses the special-case expression used in the legacy code.
+- For `alpha == 1`, the implementation uses the special-case expression used in the legacy code.
 """
 function measure_magic_pure(
     state::AbstractVector{<:Complex},
     pauli_ops::AbstractVector{<:AbstractMatrix},
-    α::Union{Real, AbstractVector{<:Real}}=2,
+    alpha::Union{Real, AbstractVector{<:Real}}=2,
 )
     n_qubits = _n_qubits_from_state_length(length(state))
     hilbert_dim = 2^n_qubits
 
-    ξ = Vector{Float64}(undef, length(pauli_ops))
+    xi = Vector{Float64}(undef, length(pauli_ops))
 
     # Ensure we operate on a concrete vector to avoid surprises with views.
-    ψ = ComplexF64.(state)
-    ψ† = adjoint(ψ)
+    psi = ComplexF64.(state)
+    psi_dag = adjoint(psi)
 
     for (i, op) in enumerate(pauli_ops)
-        # Legacy convention: ξ ∝ (⟨ψ|P|ψ⟩)^2 (not abs2).
-        v = (ψ† * (op * ψ))[1]
-        ξ[i] = real((1 / hilbert_dim) * (v^2))
+        # Legacy convention: xi is proportional to (<psi|P|psi>)^2 (not abs2).
+        v = (psi_dag * (op * psi))[1]
+        xi[i] = real((1 / hilbert_dim) * (v^2))
     end
 
-    if α isa Real
-        if α == 1
-            magic = 1 - hilbert_dim * sum(ξ .^ 2)
+    if alpha isa Real
+        if alpha == 1
+            magic = 1 - hilbert_dim * sum(xi .^ 2)
         else
-            a = float(α)
-            magic = (1 - a)^(-1) * log2(sum(ξ .^ a)) - log2(hilbert_dim)
+            a = float(alpha)
+            magic = (1 - a)^(-1) * log2(sum(xi .^ a)) - log2(hilbert_dim)
         end
     else
-        magic = [(1 - float(a))^(-1) * log2(sum(ξ .^ float(a))) - log2(hilbert_dim) for a in α]
+        magic = [(1 - float(a))^(-1) * log2(sum(xi .^ float(a))) - log2(hilbert_dim) for a in alpha]
     end
 
-    return magic, ξ
+    return magic, xi
 end
 
 """
-    measure_magic_mixed(ρ, pauli_ops; α=2) -> Float64
+    measure_magic_mixed(rho, pauli_ops; alpha=2) -> Float64
 
-Compute magic of a mixed state `ρ` using stabiliser Rényi entropy.
+Compute magic of a mixed state `rho` using stabiliser Renyi entropy.
 
 Parameters
-- `ρ`: Density matrix of size `2^n × 2^n`.
+- `rho`: Density matrix of size `2^n x 2^n`.
 - `pauli_ops`: Vector of Pauli operators on `n` qubits.
-- `α`: Rényi parameter (keyword; default `2`).
+- `alpha`: Renyi parameter (keyword; default `2`).
 
 Returns
 - Magic value as `Float64`.
 
 Notes
 - This implementation follows the legacy code structure and includes the purity correction term
-  `log2(sum(eigvals(ρ).^2))`.
+  `log2(sum(eigvals(rho).^2))`.
 - For large systems, eigenvalue computations may dominate runtime.
 """
 function measure_magic_mixed(
-    ρ::AbstractMatrix{<:Complex},
+    rho::AbstractMatrix{<:Complex},
     pauli_ops::AbstractVector{<:AbstractMatrix};
-    α::Real=2,
+    alpha::Real=2,
 )::Float64
-    n_qubits = _n_qubits_from_density_matrix(ρ)
+    n_qubits = _n_qubits_from_density_matrix(rho)
     hilbert_dim = 2^n_qubits
 
-    ξ = Vector{Float64}(undef, length(pauli_ops))
+    xi = Vector{Float64}(undef, length(pauli_ops))
     for (i, op) in enumerate(pauli_ops)
-        # trace(op * ρ) implemented via sum(diag(...)) for broad compatibility.
-        t = sum(diag(op * ρ))
-        ξ[i] = real((1 / hilbert_dim) * (t^2))
+        # trace(op * rho) implemented via sum(diag(...)) for broad compatibility.
+        t = sum(diag(op * rho))
+        xi[i] = real((1 / hilbert_dim) * (t^2))
     end
 
-    magic = (1 - α)^(-1) * log2(sum(ξ .^ α)) - log2(hilbert_dim) + log2(sum(eigvals(ρ) .^ 2))
+    magic = (1 - alpha)^(-1) * log2(sum(xi .^ alpha)) - log2(hilbert_dim) + log2(sum(eigvals(rho) .^ 2))
     return magic
 end
 

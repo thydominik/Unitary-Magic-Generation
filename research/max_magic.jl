@@ -10,7 +10,7 @@ This file was migrated from `src/core/magic/MaxMagic.jl` and refactored so that 
 
 Warning
 The original brute-force coefficient sweep scales as `|C|^(2^n)` where `C` is the coefficient set.
-For `n=4` and `|C|=4`, this is `4^16 ≈ 4.3×10^9` candidate states, which is not intended to be
+For `n=4` and `|C|=4`, this is `4^16 ~= 4.3e9` candidate states, which is not intended to be
 run as-is.
 """
 module max_magic
@@ -24,7 +24,7 @@ using .magic
 export search_high_magic_states
 
 """
-    search_high_magic_states(; n_qubits=4, coeff_set=[1, im, 1+im, 0], α=2,
+    search_high_magic_states(; n_qubits=4, coeff_set=[1, im, 1+im, 0], alpha=2,
                               threshold=-Inf, max_iter=nothing) -> Vector{Vector{ComplexF64}}
 
 Search for states with magic above `threshold` by enumerating coefficient grids.
@@ -32,7 +32,7 @@ Search for states with magic above `threshold` by enumerating coefficient grids.
 Parameters
 - `n_qubits`: Number of qubits; the state dimension is `2^n_qubits`.
 - `coeff_set`: Coefficients used for each computational basis amplitude.
-- `α`: Rényi parameter passed to `magic.measure_magic_pure`.
+- `alpha`: Renyi parameter passed to `magic.measure_magic_pure`.
 - `threshold`: Keep states whose magic is strictly greater than this value.
 - `max_iter`: Optional limit on the number of candidates to test (useful to cap runtime).
 
@@ -40,14 +40,14 @@ Returns
 - A vector of normalized state vectors that passed the threshold.
 
 Notes
-- This is primarily a *research* utility. For realistic searches, prefer randomized or heuristic
+- This is primarily a research utility. For realistic searches, prefer randomized or heuristic
   approaches rather than full enumeration.
 """
 function search_high_magic_states(
     ;
     n_qubits::Integer=4,
     coeff_set=(1 + 0im, 0 + 1im, 1 + 1im, 0 + 0im),
-    α::Real=2,
+    alpha::Real=2,
     threshold::Real=-Inf,
     max_iter::Union{Nothing, Integer}=nothing,
 )
@@ -73,16 +73,16 @@ function search_high_magic_states(
         @inbounds for k in 1:dim
             d = (x % base) + 1
             state[k] = coeffs[d]
-            x ÷= base
+            x = div(x, base)
         end
 
         nrm = norm(state)
         nrm == 0 && continue
-        ψ = state ./ nrm
+        psi = state ./ nrm
 
-        m, _ = magic.measure_magic_pure(ψ, pauli_ops, α)
+        m, _ = magic.measure_magic_pure(psi, pauli_ops, alpha)
         if m > threshold
-            push!(out, copy(ψ))
+            push!(out, copy(psi))
         end
     end
 
