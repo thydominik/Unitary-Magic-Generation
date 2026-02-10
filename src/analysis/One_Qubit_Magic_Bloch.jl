@@ -1,76 +1,55 @@
+"""
+one_qubit_magic_bloch.jl
+
+Compute a 1-qubit magic measure on a Bloch-sphere grid.
+
+This is analysis code (can be slow, produces output files) and is not part of the core library.
+It intentionally reuses implementations from src/core.
+
+Notes
+- All identifiers and comments are ASCII-only.
+- Output paths are relative to this file by default.
+"""
+
 using Random
-using ProgressBars
-using JLD2
-using Base.Threads
-using MAT
-using ProgressBars
 
-current_dir = @__DIR__
+# Optional analysis dependencies.
+# using JLD2
+# using MAT
+# using ProgressBars
+# using Plots
 
-# Unitary matrices
-filepath = joinpath(current_dir, "..", "Unitary-Magic-Generation/Modules", "Magic.jl")
-include(filepath)
+include(joinpath(@__DIR__, "..", "core", "magic", "magic.jl"))
+using .magic: generate_all_pauli_strings, pauli_operator_list, measure_magic_pure
 
-# Magic
-filepath = joinpath(current_dir, "..", "Unitary-Magic-Generation/Modules", "Random_Unitaries.jl")
-include(filepath)
-# Measure_Entanglement
-filepath = joinpath(current_dir, "..", "Unitary-Magic-Generation/Modules", "Entanglement.jl")
-include(filepath)
+function compute_magic_bloch(; n_theta::Int=128, n_phi::Int=256, seed::Int=1)
+    rng = MersenneTwister(seed)
+    Random.seed!(rng)
 
-using .Measure_Entanglement
-using .Measure_Magic
-using .Random_Unitary_Generation
+    n_qubits = 1
+    strings = generate_all_pauli_strings(n_qubits)
+    pauli_ops = pauli_operator_list(strings, n_qubits)
 
-Seed = 1
-# Setting the seed for the random number generation
-Random.seed!(Seed)
-# Set the number of qubits first
-No_Qubits = 1
+    theta = collect(range(0.0, pi; length=n_theta))
+    phi = collect(range(0.0, 2 * pi; length=n_phi))
 
-Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits)
-PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
+    magic_vals = zeros(Float64, length(theta), length(phi))
 
-No_Samples = 2^13
-theta = range(0, pi, Int(No_Samples / 2))
-phi     = range(0, 2 * pi, Int(No_Samples) )
-Magic   = zeros(length(theta), length(phi))
-
-for i in ProgressBar(1:length(theta))
-    for j in 1:length(phi)
-        psi = [cos(theta[i] / 2), sin(theta[i] / 2) * exp(im * phi[j])]
-        Magic[i, j] = Measure_Magic.MeasureMagic_Pure(psi, PauliOperators, 2)[1]
+    # Uncomment ProgressBars usage if installed.
+    for i in 1:length(theta)
+        for j in 1:length(phi)
+            psi = ComplexF64[cos(theta[i] / 2), sin(theta[i] / 2) * exp(im * phi[j])]
+            magic_vals[i, j] = measure_magic_pure(psi, pauli_ops, 2)[1]
+        end
     end
+
+    return (magic=magic_vals, theta=theta, phi=phi)
 end
 
-using Plots
-@save joinpath(current_dir, "Magic_Bloch_Data.jld2") Magic theta phi
-matwrite(joinpath(current_dir, "Magic_Bloch_Data.mat"), Dict(
-    "Magic" => Magic,
-    "theta" => collect(theta),
-    "phi" => collect(phi)
-))
+if abspath(PROGRAM_FILE) == @__FILE__
+    out = compute_magic_bloch()
+    @info "Computed magic grid with size $(size(out.magic))"
 
-
-using Plots
-plotlyjs()
-
-# Create meshgrid for θ and ϕ
-Θ = [θ for θ in theta, φ in phi]  # (length(theta), length(phi))
-Φ = [φ for θ in theta, φ in phi]
-
-# Convert spherical to Cartesian coordinates
-X = sin.(Θ) .* cos.(Φ)
-Y = sin.(Θ) .* sin.(Φ)
-Z = cos.(Θ)
-
-# Flatten everything for scatter plot
-x = vec(X)
-y = vec(Y)
-z = vec(Z)
-colors = vec(Magic)  # Flatten Magic values to match points
-
-# Plot as a 3D scatter plot
-scatter3d(x, y, z, marker_z=colors, c=:viridis, ms=4, legend=false,
-          xlabel="X", ylabel="Y", zlabel="Z", title="Magic Scatter on Bloch Sphere")
-
+    # Save/plot blocks intentionally omitted by default.
+    # Add JLD2/MAT/Plots calls here if you need file output.
+end
