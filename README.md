@@ -1,31 +1,49 @@
 # Unitary Magic Generation (research code)
 
-This repository contains research code used for numerical experiments on **magic** (stabilizer Rényi entropy) and entanglement in random unitary circuits / Haar-random states, as reported in:
+This repository contains Julia research code used for numerical experiments on **magic** (stabilizer Rényi entropy / stabilizer 2-Rényi entropy \(M_2\)) and entanglement in Haar-random states and random unitary circuits, as reported in:
 
 > Dominik Szombathy, Angelo Valli, Cătălin Pașcu Moca, Lóránt Farkas, and Gergely Zaránd, *Asymptotically independent fluctuations of stabilizer Rényi entropy and entanglement in random unitary circuits*, **Physical Review Research 7**, 043072 (2025). DOI: 10.1103/jplh-zl35. [file:105]
 
-## Key results (paper)
+## Research focus
 
-- For Haar-random N-qubit pure states, the stabilizer 2-Rényi entropy (magic) distribution becomes exponentially sharp and is centered around a typical value (roughly) \(\tilde{M}_2 \to N-2\) as \(N\to\infty\). [file:105]
-- The bipartite von Neumann entanglement entropy distribution is also exponentially sharp, centered near the Page value (\(\tilde{S}\approx N/2\) up to finite-size corrections). [file:105]
-- Although the typical values of magic and entanglement are both large for typical states, their *fluctuations* become exponentially uncorrelated; the covariance decays exponentially with system size. [file:105]
-- The mutual information of the joint distribution \(P_N(M_2,S)\) vanishes exponentially with N, indicating asymptotic **independence** of fluctuations. [file:105]
-- Sampling sufficiently deep brickwall circuits reproduces the same joint distribution as Haar sampling (depth on the order of system size is enough in the studied regime). [file:105]
+The paper studies the *joint statistics* of magic and entanglement for random quantum states, with an emphasis on what happens as the number of qubits \(N\) grows. [file:105]
 
-## Repository layout
+Main findings:
+- The distribution of \(M_2\) for Haar-random \(N\)-qubit pure states becomes exponentially sharp and concentrates around a typical value \(\tilde{M}_2 \to N-2\). [file:105]
+- The bipartite von Neumann entanglement entropy \(S\) is likewise exponentially concentrated around its typical (Page-like) value (scaling \(\sim N/2\) up to finite-size corrections). [file:105]
+- Fluctuations of \(M_2\) and \(S\) become exponentially uncorrelated with \(N\), and the mutual information extracted from the sampled joint distribution \(P_N(M_2,S)\) decays exponentially, indicating asymptotic independence of the fluctuations. [file:105]
+- Sampling sufficiently deep brickwall circuits reproduces the Haar joint distribution in the investigated regime (depth on the order of system size is sufficient in those numerics). [file:105]
 
-- `src/`: core routines (magic, random unitaries, entanglement, etc.).
-- `research/`: scripts for producing figures/data and running exploratory analyses.
-- `research/output/`: all generated artifacts (ignored by git).
+## Repository structure
+
+High-level layout:
+
+```
+.
+├─ src/
+│  └─ core/                 # Core routines (magic, random unitaries, entanglement, ...)
+├─ research/
+│  ├─ Magic_Distribution_Analysis/   # Distribution plots and derived statistics
+│  ├─ Unitary_Circuit_Sampling/      # Sampling scripts (regular/brickwall circuits, etc.)
+│  ├─ TEMP_BrickWall_Clifford/       # Experimental / legacy scripts (kept for reference)
+│  ├─ output/               # Generated artifacts (ignored by git)
+│  └─ research_utils.jl      # Shared helpers: SAVE_OUTPUT, output paths, portability
+└─ (other files)
+```
+
+If you only want to *use* the core functionality (without running the large experiments), start in `src/core/`. 
+
+If you want to *reproduce plots / statistics* from the workflows used in the paper, look in `research/`.
 
 ## Running the research scripts
 
-Research scripts are intended to be safe by default:
+Research scripts are designed to be safe by default:
 
-- **No files are written unless you enable output saving**.
-- Set `SAVE_OUTPUT=1` to enable writing PDFs/PNGs/JLD2/MAT files.
+- **No files are written unless you opt in.**
+- Enable writing PDFs/PNGs/JLD2/MAT with `SAVE_OUTPUT=1`.
+- Generated files go under `research/output/...`.
 
-Many scripts also expect external datasets. Point them to your local data directory via:
+Many analysis scripts expect external datasets (not included here). Set:
 
 - `RESEARCH_DATA_DIR=/path/to/data`
 
@@ -35,13 +53,11 @@ Example:
 RESEARCH_DATA_DIR=/path/to/data SAVE_OUTPUT=1 julia research/Magic_Distribution_Analysis/MagicDistribution_N5.jl
 ```
 
-Generated files will be placed under `research/output/...`.
+## Disclaimer (important)
 
-## Disclaimer
-
-- This is a **research** repository and not a polished software package; APIs, scripts, and file formats may change without notice. [file:105]
-- Some scripts reference datasets produced on an HPC system and/or large intermediate files; these datasets are **not** included in this public repository (see the Data Availability statement in the paper). [file:105]
-- A number of exploratory scripts are intentionally minimal, partially refactored, or omitted from the public version; the repository is meant to support reproducibility of the main workflow, not to provide a complete end-to-end pipeline. [file:105]
+- This is a **research** codebase, not a polished software package; APIs and scripts may change. [file:105]
+- The large raw datasets used in the paper are not included in this public repository (see the paper’s Data Availability statement). [file:105]
+- Some scripts are exploratory/legacy (especially under `research/TEMP_*`) and are provided for context rather than as a fully supported pipeline. [file:105]
 
 ## Citing
 
