@@ -1,3 +1,16 @@
+"""
+N_Qubit_Magic_random_T_Gate_small_samples.jl
+
+Same basic experiment as N_Qubit_Magic_random_T_Gate.jl, but with smaller sample counts
+for larger N.
+
+File output
+- Disabled by default.
+- Enable with: SAVE_OUTPUT=1 julia N_Qubit_Magic_random_T_Gate_small_samples.jl
+
+Outputs go to research/output/TEMP_BrickWall_Clifford/N_Qubit_Magic_random_T_Gate_small_samples/
+"""
+
 using LinearAlgebra
 using SparseArrays
 using Random
@@ -6,281 +19,70 @@ using JLD2
 using Base.Threads
 using MAT
 
-function Generate_All_2_Qubit_Clifford_Gates()
-    # Identity
-    Id = sparse([1 0; 0 1])
-    # Pauli Gates
-    PX = sparse([0 1; 1 0])
-    PY = sparse([0 -im; im 0])
-    PZ = sparse([1 0; 0 -1])
-    # Hadamard
-    H = 1/sqrt(2) * [1 1; 1 -1]
-    # Phase gate
-    S = sparse([1 0; 0 im])
-    # Two site Clifford qubit gates (11520):
-    Clifford_Gates_2_Site = []
+include(joinpath(@__DIR__, "..", "research_utils.jl"))
 
-    # Hadamard "group" and its labels
-    Hadamard_group = [Id, H]
-    Hadamard_group_labels = ["I", "H"]
+# The helper functions are identical to the main script; for now we keep them in-place.
+# If you want, we can de-duplicate later by moving them into a shared TEMP helper.
 
-    # Phase shift "group" and its labels
-    Phaseshift_group = [Id, H * S, S * H]
-    Phaseshift_group_labels = ["I", "HS", "SH"]
+include(joinpath(@__DIR__, "N_Qubit_Magic_random_T_Gate.jl"))
 
-    # "States" "group" and its labels
-    Pauli_group = [Id, PX, PY, PZ]
-    Pauli_group_labels = ["I", "X", "Y", "Z"]
+function main()
+    save_output = get_bool_env("SAVE_OUTPUT", false)
 
-    # these will be accessed multiple times
-    Dimension_Hadamard_group    = length(Hadamard_group)
-    Dimension_Phaseshift_group  = length(Phaseshift_group)
-    Dimension_Pauli_group       = length(Pauli_group)
+    # The included file defines the helper functions; we reuse them here.
+    current_dir = @__DIR__
 
-    # Gates created from the 1 qubit clifford gates (2, 2, 3, 3, 4, 4)
-    Clifford_Lables = String[]
-    for hj1 in 1:Dimension_Hadamard_group, hj2 in 1:Dimension_Hadamard_group,
-        vj1 in 1:Dimension_Phaseshift_group, vj2 in 1:Dimension_Phaseshift_group,
-        pj1 in 1:Dimension_Pauli_group, pj2 in 1:Dimension_Pauli_group
-        
-        push!(Clifford_Gates_2_Site, sparse(kron(Hadamard_group[hj1], Hadamard_group[hj2]) * 
-                                     kron(Phaseshift_group[vj1], Phaseshift_group[vj2]) * 
-                                     kron(Pauli_group[pj1], Pauli_group[pj2])))
-        push!(Clifford_Lables, "($(Hadamard_group_labels[hj1])⊗$(Hadamard_group_labels[hj2]))*" *
-                               "($(Phaseshift_group_labels[vj1])⊗$(Phaseshift_group_labels[vj2]))*" *
-                               "($(Pauli_group_labels[pj1])⊗$(Pauli_group_labels[pj2]))")
-    end
+    include(joinpath(current_dir, "..", "Modules", "Magic.jl"))
+    include(joinpath(current_dir, "..", "Modules", "Random_Unitaries.jl"))
 
-    # CNOT class contains 5184 elements = 24^2*3^2 or (2, 2, 3, 3, 3, 3, 4, 4)
-    CNOT = [1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0]
+    using .Random_Unitary_Generation
+    using .Measure_Magic
 
-    for hj1 in 1:Dimension_Hadamard_group, hj2 in 1:Dimension_Hadamard_group,
-        vj1 in 1:Dimension_Phaseshift_group, vj2 in 1:Dimension_Phaseshift_group,
-        vj3 in 1:Dimension_Phaseshift_group, vj4 in 1:Dimension_Phaseshift_group,
-        pj1 in 1:Dimension_Pauli_group, pj2 in 1:Dimension_Pauli_group
-        
-        push!(Clifford_Gates_2_Site, sparse(kron(Hadamard_group[hj1], Hadamard_group[hj2]) * 
-                                     kron(Phaseshift_group[vj1], Phaseshift_group[vj2]) * 
-                                     CNOT * 
-                                     kron(Phaseshift_group[vj3], Phaseshift_group[vj4]) * 
-                                     kron(Pauli_group[pj1], Pauli_group[pj2])))
-        push!(Clifford_Lables, "($(Hadamard_group_labels[hj1])⊗$(Hadamard_group_labels[hj2]))*" *
-                               "($(Phaseshift_group_labels[vj1])⊗$(Phaseshift_group_labels[vj2]))*" *
-                               "CNOT*" *
-                               "($(Phaseshift_group_labels[vj3])⊗$(Phaseshift_group_labels[vj4]))*" *
-                               "($(Pauli_group_labels[pj1])⊗$(Pauli_group_labels[pj2]))")
-    end
+    for NoQ in 2:8
+        for Depth in (5 * NoQ,)
+            no_qubits = NoQ
+            d = Depth
 
-    # class 3 elements with SWAP and CNOT class contains 5184 elements
-    SWAP = [1 0 0 0; 0 0 1 0; 0 1 0 0; 0 0 0 1]
+            clf_gates, _ = Generate_All_2_Qubit_Clifford_Gates()
+            strings = Measure_Magic.GenerateAllPauliStrings(no_qubits)
+            pauli_ops = Measure_Magic.PauliOperatorList(strings, no_qubits)
 
-    for hj1 in 1:Dimension_Hadamard_group, hj2 in 1:Dimension_Hadamard_group,
-        vj1 in 1:Dimension_Phaseshift_group, vj2 in 1:Dimension_Phaseshift_group,
-        vj3 in 1:Dimension_Phaseshift_group, vj4 in 1:Dimension_Phaseshift_group,
-        pj1 in 1:Dimension_Pauli_group, pj2 in 1:Dimension_Pauli_group
-        
-        push!(Clifford_Gates_2_Site, sparse(kron(Hadamard_group[hj1], Hadamard_group[hj2]) * 
-                                     kron(Phaseshift_group[vj1], Phaseshift_group[vj2]) * 
-                                     SWAP * CNOT * 
-                                     kron(Phaseshift_group[vj3], Phaseshift_group[vj4]) * 
-                                     kron(Pauli_group[pj1], Pauli_group[pj2])))
-        push!(Clifford_Lables, "($(Hadamard_group_labels[hj1])⊗$(Hadamard_group_labels[hj2]))*" *
-                               "($(Phaseshift_group_labels[vj1])⊗$(Phaseshift_group_labels[vj2]))*" *
-                               "SWAP*CNOT*" *
-                               "($(Phaseshift_group_labels[vj3])⊗$(Phaseshift_group_labels[vj4]))*" *
-                               "($(Pauli_group_labels[pj1])⊗$(Pauli_group_labels[pj2]))")
-    end
+            Random.seed!(1)
+            no_samples = 2^12
+            psi_0 = zeros(2^no_qubits)
+            psi_0[1] = 1
 
-    # class 4 elements contains 576 elements (2, 2, 3, 3, 4, 4).
-    for hj1 in 1:Dimension_Hadamard_group, hj2 in 1:Dimension_Hadamard_group,
-        vj1 in 1:Dimension_Phaseshift_group, vj2 in 1:Dimension_Phaseshift_group,
-        pj1 in 1:Dimension_Pauli_group, pj2 in 1:Dimension_Pauli_group
-        
-        push!(Clifford_Gates_2_Site, sparse(kron(Hadamard_group[hj1], Hadamard_group[hj2]) * 
-                                     kron(Phaseshift_group[vj1], Phaseshift_group[vj2]) * 
-                                     SWAP * 
-                                     kron(Pauli_group[pj1], Pauli_group[pj2])))
-        push!(Clifford_Lables, "($(Hadamard_group_labels[hj1])⊗$(Hadamard_group_labels[hj2]))*" *
-                               "($(Phaseshift_group_labels[vj1])⊗$(Phaseshift_group_labels[vj2]))*" *
-                               "SWAP*" *
-                               "($(Pauli_group_labels[pj1])⊗$(Pauli_group_labels[pj2]))")
-    end
+            for nT in 1:d
+                magic_vals = Vector{Float64}()
 
-    Clifford_Gates_2_Qubits = Clifford_Gates_2_Site
-    Labels = Clifford_Lables
-    return Clifford_Gates_2_Qubits, Labels
-end
+                for _ in ProgressBar(1:no_samples)
+                    possible = generate_T_gate_coordinates(no_qubits, d)
+                    placement = zeros(Int, nT, 2)
 
-function generate_T_gate_coordinates(N::Int, D::Int)
-    #coordinates = Tuple{Int, Int}[]
-    coordinates = zeros(Int, ( N - 1)*D, 2)
-    k = 1
-    for d in 1:D
-        if isodd(d)
-            for n in 1:N
-                if n == N && iseven(n)
-                    coordinates[k, :] = [n, d];
-                    k += 1
-                elseif n<N
-                    coordinates[k, :] = [n, d];
-                    k += 1
-                end
-            end
-        else
-            for n in 2:N
-                if n == N && isodd(n)
-                    coordinates[k, :] = [n, d];
-                    k += 1
-                elseif n<N
-                    coordinates[k, :] = [n, d];
-                    k += 1
-                end
-            end
-        end
-    end
-    
-    return coordinates
-end
-
-function Build_CLF_BrickWall_Circuit_with_T(N::Int, D::Int, T_coords, CLFGates)
-
-    TGate = sparse([[1 0]; [0 exp(im * pi/4)]]);
-    Gate = sparse(zeros(Float64, 2^N, 2^N))
-    for depthIndex in 1:D
-        if mod(depthIndex, 2) == 1
-            Layer = sparse(I(4))
-
-            for qubitIndex in 1:2:N
-                if qubitIndex < N
-                    RandomGate = CLFGates[rand(1:11520)];
-                    if qubitIndex == 1
-                        Layer = Layer * RandomGate;
-                    else
-                        Layer = kron(Layer, RandomGate);
+                    for i in 1:nT
+                        idx = rand(1:size(possible, 1))
+                        placement[i, :] = possible[idx, :]
+                        possible = delete_row(possible, idx)
                     end
-                else
-                    RandomGate = I(2);
-                    Layer = kron(Layer, RandomGate);
-                end
-            end
-        else
-            Layer = I(2);
-            for qubitIndex in 2:2:N
-                if qubitIndex < N
-                    RandomGate = CLFGates[rand(1:11520)];
-                    Layer = kron(Layer, RandomGate);
-                elseif qubitIndex == N
-                    RandomGate = I(2);
-                    Layer = kron(Layer, RandomGate);
-                end
-            end
-        end
 
-        if depthIndex == 1
-            Gate = Layer;
-        else
-            Gate = Layer * Gate;
-        end
+                    gate = Build_CLF_BrickWall_Circuit_with_T(no_qubits, d, placement, clf_gates)
+                    psi = gate * psi_0
+                    push!(magic_vals, Measure_Magic.MeasureMagic_Pure(psi, pauli_ops, 2))
+                end
 
-        if sum(T_coords[:, 2] .== depthIndex) > 0
-            for i in 1:size(T_coords, 1)
-                if T_coords[i, 2] == depthIndex
-                    ExtraLayer = kron(kron(I(2^(T_coords[i, 1] - 1)), TGate), I(2^(N - T_coords[i, 1])));
-                    Gate = ExtraLayer * Gate;
+                if save_output
+                    fname = "CLF_BW_N_$(no_qubits)_D_$(d)_NT_$(nT)_Samples_$(no_samples).mat"
+                    out_mat = output_path(fname; script_dir=@__DIR__, script_file=@__FILE__)
+                    ensure_parent_dir(out_mat)
+                    MAT.matwrite(out_mat, Dict("Magic" => magic_vals))
                 end
             end
         end
     end
-    return Gate
+
+    return nothing
 end
 
-
-function delete_row(matrix, row_index)
-    return vcat(matrix[1:row_index-1, :], matrix[row_index+1:end, :])
-end
-
-TGate = sparse([[1, 0], [0, exp(im * pi/4)]])
-
-current_dir = @__DIR__
-
-# Unitary matrices
-filepath = joinpath(current_dir, "..", "Modules", "Magic.jl")
-include(filepath)
-# Magic
-filepath = joinpath(current_dir, "..", "Modules", "Random_Unitaries.jl")
-include(filepath)
-#include("C:\\Dominik\\PhD\\Projects\\Unitary-Magic-Generation\\Modules\\Magic.jl")
-using .Random_Unitary_Generation
-using .Measure_Magic
-
-for NoQ = 2:8
-    for Depth = [5*NoQ]
-        No_Qubits = NoQ;
-        D = Depth;
-
-        CLFGates, CLFLabels = Generate_All_2_Qubit_Clifford_Gates();
-        TGate = sparse([[1 0]; [0 exp(im * pi/4)]]);
-        Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits);
-        PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits);
-        Random.seed!(1);
-        No_Samples = 2^12
-        #Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
-        Psi_0 = zeros(2^No_Qubits); Psi_0[1] = 1;
-
-        for nT in 1:D
-            Magic = Vector{Float64}()
-            for iterations in ProgressBar(1:No_Samples)
-                PossibleTGateCoordinates = generate_T_gate_coordinates(No_Qubits, D);
-                TGatePlacement = zeros(Int, nT, 2)
-                for i in 1:nT
-                    TGateIndex = rand(1:size(PossibleTGateCoordinates, 1));
-                    TGatePlacement[i, :] = PossibleTGateCoordinates[TGateIndex, :];
-                    PossibleTGateCoordinates = delete_row(PossibleTGateCoordinates, TGateIndex);
-                end
-
-                Gate = Build_CLF_BrickWall_Circuit_with_T(No_Qubits, D, TGatePlacement, CLFGates)
-                Psi = Gate * Psi_0
-                push!(Magic, Measure_Magic.MeasureMagic_Pure(Psi, PauliOperators, 2))
-            end
-            fname = "CLF_BW_N_$(No_Qubits)_D_$(D)_NT_$(nT)_Samples_$(No_Samples).mat"
-            matwrite(fname, Dict("Magic" => Magic))
-
-        end
-    end
-end
-
-for NoQ = 9:10
-    for Depth = [5*NoQ]
-        No_Qubits = NoQ;
-        D = Depth;
-
-        CLFGates, CLFLabels = Generate_All_2_Qubit_Clifford_Gates();
-        TGate = sparse([[1 0]; [0 exp(im * pi/4)]]);
-        Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits);
-        PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits);
-        Random.seed!(1);
-        No_Samples = 2^10
-        #Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
-        Psi_0 = zeros(2^No_Qubits); Psi_0[1] = 1;
-
-        for nT in 1:3:D
-            Magic = Vector{Float64}()
-            for iterations in ProgressBar(1:No_Samples)
-                PossibleTGateCoordinates = generate_T_gate_coordinates(No_Qubits, D);
-                TGatePlacement = zeros(Int, nT, 2)
-                for i in 1:nT
-                    TGateIndex = rand(1:size(PossibleTGateCoordinates, 1));
-                    TGatePlacement[i, :] = PossibleTGateCoordinates[TGateIndex, :];
-                    PossibleTGateCoordinates = delete_row(PossibleTGateCoordinates, TGateIndex);
-                end
-
-                Gate = Build_CLF_BrickWall_Circuit_with_T(No_Qubits, D, TGatePlacement, CLFGates)
-                Psi = Gate * Psi_0
-                push!(Magic, Measure_Magic.MeasureMagic_Pure(Psi, PauliOperators, 2))
-            end
-            fname = "CLF_BW_N_$(No_Qubits)_D_$(D)_NT_$(nT)_Samples_$(No_Samples).mat"
-            matwrite(fname, Dict("Magic" => Magic))
-
-        end
-    end
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
 end

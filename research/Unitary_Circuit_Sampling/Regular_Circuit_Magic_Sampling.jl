@@ -1,25 +1,37 @@
-# Sampling of N qubit random unitary circuits.
-# The only parameter here is the size of the circuit, that is 2^N by 2^N
-# N - Number of qubits
-# 
-# The starting state is optional, but due to the CUE matrices used any state suffices.
-# |Ψ⟩ = ⊗_i^N |+>
-# U|Ψ⟩ = U|0⟩ = |Haar State⟩
+"""
+Regular_Circuit_Magic_Sampling.jl
+
+Sample magic (and optionally entanglement) from N-qubit random regular unitary circuits.
+
+Important: This is research code. It can take a long time for large N or sample counts.
+
+File output
+- Disabled by default.
+- Enable with: SAVE_OUTPUT=1 julia Regular_Circuit_Magic_Sampling.jl
+- Outputs go to research/output/Unitary_Circuit_Sampling/Regular_Circuit_Magic_Sampling/
+
+Input data
+- This script generates data, so it does not require RESEARCH_DATA_DIR.
+
+Notes
+- This script still uses legacy include paths ("Modules") from older versions of the repo.
+  If you want, we can migrate it to the new src/core API in a follow-up.
+"""
 
 using Random
 using ProgressBars
 using JLD2
 using Base.Threads
 
+include(joinpath(@__DIR__, "..", "research_utils.jl"))
+
 current_dir = @__DIR__
 
-# Unitary matrices
+# Legacy modules (kept as-is for now).
 filepath = joinpath(current_dir, "..", "Modules", "Magic.jl")
 include(filepath)
-# Magic
 filepath = joinpath(current_dir, "..", "Modules", "Random_Unitaries.jl")
 include(filepath)
-# Measure_Entanglement
 filepath = joinpath(current_dir, "..", "Modules", "Entanglement.jl")
 include(filepath)
 
@@ -27,46 +39,57 @@ using .Measure_Entanglement
 using .Measure_Magic
 using .Random_Unitary_Generation
 
-function Regular_Circuit_Magic_sampling(No_Qubits::Int, No_Samples::Int, Seed::Int)
-    # Setting the seed for the random number generation
-    Random.seed!(Seed)
+function regular_circuit_magic_sampling(no_qubits::Int, no_samples::Int, seed::Int)
+    Random.seed!(seed)
 
-    # Sampling parameters
-    No_Samples = No_Samples
-    # Set the number of qubits first
-    No_Qubits = No_Qubits
+    psi_0 = 1 / sqrt(2^no_qubits) * ones(2^no_qubits)
 
-    Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
+    strings = Measure_Magic.GenerateAllPauliStrings(no_qubits)
+    pauli_ops = Measure_Magic.PauliOperatorList(strings, no_qubits)
 
-    Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits)
-    PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
+    magic_vals = Vector{Float64}()
+    entanglement = Vector{Vector{Float64}}()
+    subsystems = Vector{Vector{Vector{Int}}}()
 
-    Magic           = Vector{Float64}()
-    Entanglement    = Vector{Vector{Float64}}()
-    SubSystems      = Vector{Vector{Vector{Int}}}()
+    for _ in ProgressBar(1:no_samples)
+        u = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(no_qubits)
+        state = u * psi_0
 
-    for i in ProgressBar(1:No_Samples)    
-        U = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(No_Qubits);
-        State = U * Psi_0
-        SVN, SubSys = Measure_Entanglement.calculate_entanglement(State, subsystems = "Middle")
-            # println(typeof(SubSys))
-            # println("iteration : ", i)
-            # println("Subsystem: ", SubSys)
-            # println("Entropies: ", SVN)
-        #push!(Entanglement, SVN)
-        #push!(SubSystems, SubSys)
-    
-        push!(Magic, Measure_Magic.MeasureMagic_Pure(State, PauliOperators)[1])
-            # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
+        # SVN, subsys = Measure_Entanglement.calculate_entanglement(state, subsystems="Middle")
+        # push!(entanglement, SVN)
+        # push!(subsystems, subsys)
+
+        push!(magic_vals, Measure_Magic.MeasureMagic_Pure(state, pauli_ops)[1])
     end
 
-    fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
-    #matwrite(fname, Dict("Magic" => Magic)) 
-    @save fname Psi_0 No_Samples No_Qubits Seed Entanglement SubSystems
-    return Magic, Entanglement
+    return magic_vals, entanglement, subsystems, psi_0
 end
 
-N = 7
-Partitions = 1
-div = Int(log2(Partitions))
-M, S = Regular_Circuit_Magic_sampling(N, 2^(20), 2)
+function main()
+    save_output = get_bool_env("SAVE_OUTPUT", false)
+
+    n = 7
+    seed = 2
+    no_samples = 2^20
+
+    magic_vals, entanglement, subsystems, psi_0 = regular_circuit_magic_sampling(n, no_samples, seed)
+
+    if save_output
+        out_jld2 = output_path(
+            "RegularUnitaryCircuitMagicSampled_N_$(n)_Samples_$(no_samples)_Seed_$(seed).jld2";
+            script_dir=@__DIR__,
+            script_file=@__FILE__,
+        )
+        ensure_parent_dir(out_jld2)
+        JLD2.@save out_jld2 psi_0 no_samples n seed magic_vals entanglement subsystems
+        @info "Saved results to $out_jld2"
+    else
+        @info "SAVE_OUTPUT is disabled; results are kept in memory only."
+    end
+
+    return nothing
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
+end

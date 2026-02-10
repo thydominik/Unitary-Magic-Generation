@@ -1,10 +1,18 @@
-# Sampling of N qubit random unitary circuits.
-# The only parameter here is the size of the circuit, that is 2^N by 2^N
-# N - Number of qubits
-# 
-# The starting state is optional, but due to the CUE matrices used any state suffices.
-# |Ψ⟩ = ⊗_i^N |+>
-# U|Ψ⟩ = U|0⟩ = |Haar State⟩
+"""
+One_Qubit_Nonstabilising_power.jl
+
+A small 1-qubit experiment: sample random unitaries and measure the magic generated
+from each stabiliser input state.
+
+File output
+- Disabled by default.
+- Enable with: SAVE_OUTPUT=1 julia One_Qubit_Nonstabilising_power.jl
+- Outputs go to research/output/Unitary_Circuit_Sampling/One_Qubit_Nonstabilising_power/
+
+Notes
+- This script still uses legacy Modules/*.jl includes.
+- The plotting section is kept but saving is guarded.
+"""
 
 using Random
 using ProgressBars
@@ -12,15 +20,15 @@ using JLD2
 using Base.Threads
 using MAT
 
+include(joinpath(@__DIR__, "..", "research_utils.jl"))
+
 current_dir = @__DIR__
 
-# Unitary matrices
+# Legacy modules.
 filepath = joinpath(current_dir, "..", "Modules", "Magic.jl")
 include(filepath)
-# Magic
 filepath = joinpath(current_dir, "..", "Modules", "Random_Unitaries.jl")
 include(filepath)
-# Measure_Entanglement
 filepath = joinpath(current_dir, "..", "Modules", "Entanglement.jl")
 include(filepath)
 
@@ -28,90 +36,72 @@ using .Measure_Entanglement
 using .Measure_Magic
 using .Random_Unitary_Generation
 
-Seed = 1
-# Setting the seed for the random number generation
-Random.seed!(Seed)
-# Sampling parameters
-No_Samples = 2^22
-No_Stab = 6
-# Set the number of qubits first
-No_Qubits = 1
+function main()
+    save_output = get_bool_env("SAVE_OUTPUT", false)
 
-Psi = zeros(Complex, 6, 2);
-Psi[1, :] = [0 1];
-Psi[2, :] = [1 0];
-Psi[3, :] = [1/sqrt(2) 1/sqrt(2)];
-Psi[4, :] = [1/sqrt(2) -1/sqrt(2)];
-Psi[5, :] = [1/sqrt(2) im/sqrt(2)];
-Psi[6, :] = [1/sqrt(2) -im/sqrt(2)];
-Strings = Measure_Magic.GenerateAllPauliStrings(No_Qubits)
-PauliOperators = Measure_Magic.PauliOperatorList(Strings, No_Qubits)
-Magic           = zeros(No_Samples, No_Stab)
+    seed = 1
+    Random.seed!(seed)
 
+    no_samples = 2^22
+    no_stab = 6
+    no_qubits = 1
 
-for i in ProgressBar(1:No_Samples) 
-    #M2 = Vector{Float64}()
-    U = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(No_Qubits);
-    for stabstate in 1:No_Stab
-        Psi_0 = Psi[stabstate, :] 
-        
-        State = U * Psi_0
+    psi = zeros(ComplexF64, 6, 2)
+    psi[1, :] = [0, 1]
+    psi[2, :] = [1, 0]
+    psi[3, :] = [1 / sqrt(2), 1 / sqrt(2)]
+    psi[4, :] = [1 / sqrt(2), -1 / sqrt(2)]
+    psi[5, :] = [1 / sqrt(2), im / sqrt(2)]
+    psi[6, :] = [1 / sqrt(2), -im / sqrt(2)]
 
-        #push!(M2, Measure_Magic.MeasureMagic_Pure(State, PauliOperators, 2)[1])
-        Magic[i, stabstate] = Measure_Magic.MeasureMagic_Pure(State, PauliOperators, 2)[1]
+    strings = Measure_Magic.GenerateAllPauliStrings(no_qubits)
+    pauli_ops = Measure_Magic.PauliOperatorList(strings, no_qubits)
+
+    magic = zeros(Float64, no_samples, no_stab)
+
+    for i in ProgressBar(1:no_samples)
+        u = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(no_qubits)
+        for stabstate in 1:no_stab
+            psi_0 = psi[stabstate, :]
+            state = u * psi_0
+            magic[i, stabstate] = Measure_Magic.MeasureMagic_Pure(state, pauli_ops, 2)[1]
+        end
     end
-    #push!(Magic, mean(M2))
-    #empty!(M2)
+
+    if save_output
+        out_jld2 = output_path(
+            "UnitaryMagicSampling_AllStabs_N_1_Samples_$(no_samples).jld2";
+            script_dir=@__DIR__,
+            script_file=@__FILE__,
+        )
+        ensure_parent_dir(out_jld2)
+        JLD2.@save out_jld2 magic
+        @info "Saved results to $out_jld2"
+    else
+        @info "SAVE_OUTPUT is disabled; not writing JLD2 output."
+    end
+
+    # Plotting (optional)
+    using Plots
+    p = plot()
+    histogram!(p, magic[:, 1], bins=range(0, log2(3 / 2); length=1000), normalize=:pdf)
+
+    nsp = zeros(Float64, no_samples)
+    for i in 1:no_samples
+        nsp[i] = sum(magic[i, :]) / no_stab
+    end
+
+    histogram!(p, nsp, bins=range(0, log2(3 / 2); length=1000), normalize=:pdf)
+
+    if save_output
+        out_pdf = output_path("UnitaryMagicSampling_Histograms.pdf"; script_dir=@__DIR__, script_file=@__FILE__)
+        ensure_parent_dir(out_pdf)
+        savefig(p, out_pdf)
+    end
+
+    return nothing
 end
-#fname = "NonStabilisingPower_of_Unitary_N_1_Samples_$(No_Samples)_Seed_$(Seed).mat"
-#matwrite(fname, Dict("Magic" => Magic))
 
-fname = "UnitaryMagicSampling_AllStabs_N_1_Samples_$(No_Samples).jld2"
-@save fname Magic
-
-using Plots
-plot()
-histogram!(Magic[:, 1], bins=range(0, log2(3/2), 1000), normalize=:pdf)
-
-NSP = zeros(No_Samples * 2)
-for i in 1:No_Samples*2
-    NSP[i] = sum(Magic[i, :]) / No_Stab
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
 end
-
-histogram!(NSP, bins=range(0, log2(3/2), 1000), normalize=:pdf)
-
-plot!(xlims=(0, log2(3/2)), ylims=(0, 7))
-plot(size=(400, 400), Magic[1:100, 3], Magic[1:100, 6], xlims=(0, log2(3/2)), ylims=(0, log2(3/2)))
-
-
-vline!([mean(Magic), mean(NSP)])
-mean(Magic)
-mean(NSP)
-using Statistics
-plot(sort(Magic)[1:10:end])
-using StatsBase
-histogram(Magic, nbins = 500, normalize=:pdf)
-mean(Magic)
-
-skewness(Magic)
-
-
-
-
-using LaTeXStrings
-Magic = load("UnitaryMagicSampling_AllStabs_N_1_Samples_4194304.jld2")["Magic"]
-NSP = zeros(No_Samples * 2)
-for i in 1:No_Samples*2
-    NSP[i] = sum(Magic[i, :]) / 6
-end
-plot()
-histogram!(Magic[:], bins=range(0, log2(3/2), 1000), normalize=:pdf, label=L"\rho(M_2)")
-histogram!(NSP, bins=range(0, log2(3/2), 1000), normalize=:pdf, label=L"\rho(\mathcal{M}_2)")
-plot!(xlims=(0, log2(3/2)),
-    ylims=(0, 7),
-    xlabel=L"M_2",
-    ylabel=L"\rho(M_2), \rho(\mathcal{M}_2)")
-vline!([mean(Magic)], color=:black, label = "Average")
-
-savefig("UnitaryMagicSampling_Histograms.pdf")
-
