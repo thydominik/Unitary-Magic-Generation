@@ -1,3 +1,9 @@
+"""
+MagicDistribution_N2.jl
+
+See MagicDistribution_N4.jl for conventions.
+"""
+
 using Statistics
 using Plots
 using PlotThemes
@@ -5,195 +11,70 @@ using LaTeXStrings
 using StatsBase
 using JLD2
 
+include(joinpath(@__DIR__, "..", "research_utils.jl"))
 
-# Example:
-#plot(x, y, title="Customized Plot", xlabel="X-axis", ylabel="Y-axis", lw=3, color=:red, marker=:circle, legend=:topright)
+function main()
+    save_output = get_bool_env("SAVE_OUTPUT", false)
+    data_dir = get(ENV, "RESEARCH_DATA_DIR", "")
+    require_data_dir(data_dir)
 
-# Loading data -------------------------------------------------------------------------------------------------------------------------------------------
-dataPath = "D:\\Data\\Random_Unitary_Magic_Generation\\RegularUnitaryCircuitMagicSampled_N_2_Samples_1048576_Seed_1.jld2"
-data    = JLD2.load(dataPath)
+    no_qubits = 2
+    no_depth = no_qubits + 1
+    no_data = no_depth + 1
 
-# Manipulation of data -------------------------------------------------------------------------------------------------------------------------------------------
-    # Normalise data:
-M2      = round.(data["Magic"] ./ log(5/2), digits=14)
-    # calculate the quantiles of the data
-a = quantile(M2, [0.25, 0.5, 0.75])
-    # Create histogram for the normalised magic data
-    bin_edges = range(0, 1, length = 1001)
-h = fit(Histogram, M2, bin_edges)
-    # Normalise magic data
-h       = StatsBase.normalize(h, mode=:pdf)
-bins    = Vector(h.edges[1])
-counts  = h.weights
+    data = Dict{Int, Any}()
 
-# Check normalisation
-Integral = 0
-for i in 1:length(counts)
-    Integral += (bins[i + 1] - bins[i]) * counts[i]
-end
-println(round(Integral, digits=10))
+    reg_path = joinpath(data_dir, "Random_Unitary_Magic_Generation",
+                        "RegularUnitaryCircuitMagicSampled_N_$(no_qubits)_Samples_1048576_Seed_1.jld2")
+    data[1] = JLD2.load(reg_path)
 
-# plotting -------------------------------------------------------------------------------------------------------------------------------------------
-p = plot(bins[1:length(bins)-1], (counts), lw=2, label="Magic distribution", legend=:topleft, dpi=400)
-vline!([a[1]], color=:red,      label="25% = $(round(a[1], digits=5))")
-vline!([a[2]], color=:green,    label="50% = $(round(a[2], digits=5))")
-vline!([a[3]], color=:blue,     label="75% = $(round(a[3], digits=5))")
-vline!([mean(M2)],      linestyle=:dash, label="Average Magic = $(round(mean(M2),   digits=4))")
-vline!([median(M2)],    linestyle=:dash, label="Median Magic = $(round(median(M2),  digits=4))")
+    for d in 1:no_depth
+        bw_path = joinpath(data_dir, "Random_Unitary_Magic_Generation",
+                           "BWUnitaryCircuitMagicSampled_N_$(no_qubits)_D_$(d)_Samples_1048576_Seed_1.jld2")
+        data[d + 1] = JLD2.load(bw_path)
+    end
 
-theme(:mute::Symbol;)
+    m2 = Dict{Int, Vector{Float64}}()
+    for i in 1:no_data
+        m2[i] = round.(data[i]["Magic"] ./ log((2^no_qubits + 1) / 2); digits=14)
+    end
 
-title!(L"Magic Distribution $N = 2$",   titlefontsize=20)
-xlabel!(L"$\tilde{M}_2$",               labelfontsize=20)
-ylabel!(L"$\varrho(\tilde{M}_2)$",      labelfontsize=20)
+    bin_edges = range(0, 1; length=1001)
+    h = Dict{Int, Histogram}()
+    for i in 1:no_data
+        h[i] = fit(Histogram, m2[i], bin_edges)
+        h[i] = StatsBase.normalize(h[i], mode=:pdf)
+    end
 
-plot!(framestyle=:box)
-plot!(legendfontsize=10)
+    counts = Dict{Int, Vector{Float64}}()
+    for i in 1:no_data
+        counts[i] = h[i].weights
+    end
 
-annotate!((bins[argmax(counts)], 2.5, text("max(P(M)) = $(bins[argmax(counts)])"), :center))
+    p = plot(dpi=400)
+    for i in 1:no_data
+        label = (i == 1) ? "Regular circuit" : "D = $(i - 1)"
+        plot!(bin_edges[1:end-1], counts[i], lw=2, label=label, legend=:topleft)
+    end
 
-savefig(p, "N2_RegularCircuit_MagicDistribution.pdf")
-savefig(p, "N2_RegularCircuit_MagicDistribution.png")
+    theme(:mute::Symbol;)
+    title!(L"Magic Distribution $N = 2$ and $D = 1-3$"; titlefontsize=20)
+    xlabel!(L"$\\tilde{M}_2$"; labelfontsize=20)
+    ylabel!(L"$\\varrho(\\tilde{M}_2)$"; labelfontsize=20)
+    plot!(framestyle=:box)
+    plot!(legendfontsize=10)
 
-# Statistical tests:
-samples     = Vector()
-Mean        = Vector()
-Variance    = Vector()
-Median      = Vector()
-Skewness    = Vector()
-Kurtosis    = Vector()
-k = 1
-for i in range(1, 20)
-    M2      = round.(data["Magic"][1:2^i] ./ log(5/2), digits=14)
-        # calculate the quantiles of the data
-    a = quantile(M2, [0.25, 0.5, 0.75])
-        # Create histogram for the normalised magic data
-    h = fit(Histogram, M2, nbins=1000)
-        # Normalise magic data
-    h       = StatsBase.normalize(h, mode=:pdf)
-    bins    = Vector(h.edges[1])
-    counts  = h.weights
+    if save_output
+        out_pdf = output_path("N2_Depth_vs_reg.pdf"; script_dir=@__DIR__, script_file=@__FILE__)
+        out_png = output_path("N2_Depth_vs_reg.png"; script_dir=@__DIR__, script_file=@__FILE__)
+        ensure_parent_dir(out_pdf)
+        savefig(p, out_pdf)
+        savefig(p, out_png)
+    end
 
-    println(2^i)
-    push!(samples, 2^i)
-    push!(Mean, mean(M2))
-    push!(Median, median(M2))
-    push!(Skewness, skewness(M2))
-    push!(Kurtosis, kurtosis(M2))
-    push!(Variance, var(M2))
-    k += 1
+    return nothing
 end
 
-@save "N2_Statistics.jld2" counts bins samples Mean Median Skewness kurtosis Variance
-
-# Mean -------------------------------------------------------------------------------
-
-p = scatter(log2.(samples),    Mean,       label="Average", dpi = 400)
-theme(:mute::Symbol;)
-
-title!(L"Mean $N = 2$", titlefontsize=20)
-xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$\langle \tilde{M}_2 \rangle$",           labelfontsize=20)
-plot!(ylims=[0, 1])
-hline!([Mean[end]], label="")
-plot!(framestyle=:box)
-plot!(legendfontsize=10)
-
-savefig(p, "N2_sample_vs_mean.pdf")
-savefig(p, "N2_sample_vs_mean.png")
-
-# Mean -------------------------------------------------------------------------------
-
-p = scatter(log2.(samples),    Median,     label="Median", dpi = 400)
-theme(:mute::Symbol;)
-
-title!(L"Median $N = 2$", titlefontsize=20)
-xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$Median(\tilde{M}_2)$",           labelfontsize=20)
-
-plot!(framestyle=:box)
-plot!(legendfontsize=10)
-plot!(ylims=[0, 1])
-hline!([Median[end]], label="")
-
-savefig(p, "N2_sample_vs_median.pdf")
-savefig(p, "N2_sample_vs_median.png")
-
-# Mean -------------------------------------------------------------------------------
-
-p = scatter(log2.(samples),    Skewness,   label="Skewness", dpi=400)
-theme(:mute::Symbol;)
-
-title!(L"Skewness $N = 2$", titlefontsize=20)
-xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$Skew(\tilde{M}_2)$",           labelfontsize=20)
-
-plot!(framestyle=:box)
-plot!(legendfontsize=10)
-plot!(ylims=[-1.5, 0.5])
-
-savefig(p, "N2_sample_vs_skewness.pdf")
-savefig(p, "N2_sample_vs_skewness.png")
-
-# Mean -------------------------------------------------------------------------------
-
-p = scatter(log2.(samples),    Kurtosis,   label="Kurtosis")
-theme(:mute::Symbol;)
-
-title!(L"Kurtosis $N = 2$", titlefontsize=20)
-xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$Kurt(\tilde{M}_2)$",           labelfontsize=20)
-
-plot!(framestyle=:box)
-plot!(legendfontsize=10)
-plot!(ylims=[-3, 3])
-
-savefig(p, "N2_sample_vs_kurtosis.pdf")
-savefig(p, "N2_sample_vs_kurtosis.png")
-
-# Variance -------------------------------------------------------------------------------
-
-p = scatter(log2.(samples),    Variance,   label="Kurtosis")
-theme(:mute::Symbol;)
-
-title!(L"Variance $N = 2$", titlefontsize=20)
-xlabel!(L"$\log_2$ - Sample size",      labelfontsize=20)
-ylabel!(L"$Var(\tilde{M}_2)$",           labelfontsize=20)
-
-plot!(framestyle=:box)
-plot!(legendfontsize=10)
-plot!(ylims=[0, 0.03])
-savefig(p, "N2_sample_vs_variance.pdf")
-savefig(p, "N2_sample_vs_variance.png")
-
-
-# Entanglement VS Magic ============================================================
-using KernelDensity
-using StatsPlots
-
-M2  = round.(data["Magic"] ./ log(5/2), digits=14)
-SVN = Vector{Float64}()
-for i in 1:(2^20)
-    push!(SVN, round(data["Entanglement"][i][1], digits=14))
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
 end
-
-plot(legend=:topright)
-# scatter!(M2[1:10000], SVN[1:10000])
-p = histogram2d(M2, SVN, bins=(500, 500), show_empty_bins=false, normalise=:pdf, color=:plasma )
-k = kde((M2, SVN))
-p = contourf(k, c = :vik, linewidth = 2,dpi=400, facealpha=0)
-
-theme(:mute::Symbol;)
-
-title!(L"$\varrho(S_{VN}, \tilde{M}_2)$", titlefontsize=20)
-xlabel!(L"$\tilde{M}_2$",      labelfontsize=20)
-ylabel!(L"$S_{VN}$",           labelfontsize=20)
-
-plot!(framestyle=:box)
-plot!(legendfontsize=10)
-
-plot!(xscale=:lin)
-plot!(xlims=[0, 1])
-plot!(ylims=[0, log2(2)])
-savefig(p, "N2_SM_dist.pdf")
-savefig(p, "N2_SM_dist.png")

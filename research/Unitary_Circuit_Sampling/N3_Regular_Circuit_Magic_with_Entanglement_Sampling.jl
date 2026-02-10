@@ -1,95 +1,107 @@
-# Sampling of N qubit random unitary circuits.
-# The only parameter here is the size of the circuit, that is 2^N by 2^N
-# N - Number of qubits
-# 
-# The starting state is optional, but due to the CUE matrices used any state suffices.
-# |Ψ⟩ = ⊗_i^N |+>
-# U|Ψ⟩ = U|0⟩ = |Haar State⟩
+"""
+N3_Regular_Circuit_Magic_with_Entanglement_Sampling.jl
+
+Sample magic (stabilizer Rényi entropy) and bipartite entanglement cuts for regular random circuits.
+
+File output
+- Disabled by default.
+- Enable with: SAVE_OUTPUT=1 julia N3_Regular_Circuit_Magic_with_Entanglement_Sampling.jl
+- Outputs go to research/output/Unitary_Circuit_Sampling/N3_Regular_Circuit_Magic_with_Entanglement_Sampling/
+
+Notes
+- This is research code and can be very slow for large sample counts.
+- Uses legacy `research/Modules/*.jl` includes.
+"""
 
 using Random
 using ProgressBars
 using JLD2
-using Base.Threads
 using LinearAlgebra
-using Plots
-using StatsBase
+
+include(joinpath(@__DIR__, "..", "research_utils.jl"))
 
 current_dir = @__DIR__
 
-# Unitary matrices
-filepath = joinpath(current_dir, "..", "Modules", "Magic.jl")
-include(filepath)
-# Magic
-filepath = joinpath(current_dir, "..", "Modules", "Random_Unitaries.jl")
-include(filepath)
-# Measure_Entanglement
-filepath = joinpath(current_dir, "..", "Modules", "Entanglement.jl")
-include(filepath)
+# Legacy modules
+include(joinpath(current_dir, "..", "Modules", "Magic.jl"))
+include(joinpath(current_dir, "..", "Modules", "Random_Unitaries.jl"))
+include(joinpath(current_dir, "..", "Modules", "Entanglement.jl"))
 
 using .Measure_Entanglement
 using .Measure_Magic
 using .Random_Unitary_Generation
 
-function NQubit_Regular_Circuit_Magic_w_Entanglement_sampling(No_Qubits::Int, No_Samples::Int, Seed::Int)
-    # Setting the seed for the random number generation
-    Random.seed!(Seed)
+function regular_circuit_magic_with_entanglement_sampling(no_qubits::Int, no_samples::Int, seed::Int)
+    Random.seed!(seed)
 
-    # Sampling parameters
-    No_Samples = No_Samples
-    # Set the number of qubits first
-    No_Qubits = No_Qubits
+    psi_0 = 1 / sqrt(2^no_qubits) * ones(ComplexF64, 2^no_qubits)
 
-    Psi_0 = 1/sqrt(2^No_Qubits) * ones(2^No_Qubits);
-
-    PauliOperators = Dict();
-    for pauliIndex in 1:No_Qubits
-        PauliOperators[pauliIndex] = Measure_Magic.PauliOperatorList(Measure_Magic.GenerateAllPauliStrings(pauliIndex), pauliIndex)
+    pauli_ops = Dict{Int, Any}()
+    for q in 1:no_qubits
+        pauli_ops[q] = Measure_Magic.PauliOperatorList(Measure_Magic.GenerateAllPauliStrings(q), q)
     end
 
-    Magic           = Vector{Float64}()
-    SMagic          = Vector{Vector{Float64}}()
-    Entanglement    = Vector{Vector{Float64}}()
-    SubSystems      = Vector{Vector{Vector{Int}}}()
-    Purity          = Vector{Vector{Float64}}()
-    for i in ProgressBar(1:No_Samples)    
-        U = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(No_Qubits);
-        State = U * Psi_0
+    magic_vals = Vector{Float64}(undef, no_samples)
+    entanglement = Vector{Vector{Float64}}(undef, no_samples)
+    subsystems = Vector{Vector{Vector{Int}}}(undef, no_samples)
 
-        Entropies   = Float64[]
-        SubSys      = Vector{Int}[]
-        SubMagic    = Vector{Float64}()
-        Pure        = Vector{Float64}()
-        for q in 1:(No_Qubits - 1)
-            subsystem = 1:q
-            reduced_matrix_left,    keep_qubits = Measure_Entanglement.reduced_density_matrix(State, collect(subsystem))
-            subsystem = (q + 1):No_Qubits
-            reduced_matrix_right,   keep_qubits = Measure_Entanglement.reduced_density_matrix(State, collect(subsystem))
+    for i in ProgressBar(1:no_samples)
+        u = Random_Unitary_Generation.Generate_Regular_Unitary_Circuit(no_qubits)
+        state = u * psi_0
 
-            push!(Entropies, Measure_Entanglement.von_neumann_entropy(reduced_matrix_left))
-            push!(SubSys, keep_qubits)
-            push!(SubMagic, Measure_Magic.MeasureMagic_Mixed(reduced_matrix_left,   PauliOperators[No_Qubits - q], 2))
-            push!(SubMagic, Measure_Magic.MeasureMagic_Mixed(reduced_matrix_right,  PauliOperators[q], 2))
-            push!(Pure, real(sum(diag(reduced_matrix_left^2))))
-            push!(Pure, real(sum(diag(reduced_matrix_right^2))))
+        entropies = Float64[]
+        subsys = Vector{Int}[]
+
+        for q in 1:(no_qubits - 1)
+            left = collect(1:q)
+            right = collect((q + 1):no_qubits)
+
+            rho_left, keep_left = Measure_Entanglement.reduced_density_matrix(state, left)
+            rho_right, keep_right = Measure_Entanglement.reduced_density_matrix(state, right)
+
+            push!(entropies, Measure_Entanglement.von_neumann_entropy(rho_left))
+            push!(subsys, keep_left)
+
+            # keep_right is redundant given keep_left, but we store both for completeness
+            push!(subsys, keep_right)
+
+            # (Optional) Mixed-state magic / purity can be added back later if needed.
+            _ = rho_right
         end
 
-        push!(Entanglement, Entropies)
-        push!(SubSystems, SubSys)
-        push!(Magic, Measure_Magic.MeasureMagic_Pure(State, PauliOperators[No_Qubits], 2))
-        push!(SMagic, SubMagic)
-        push!(Purity, Pure)
-            # println("Depth = ", D, " sample: ", i, " Time: ", time() - t1)
+        entanglement[i] = entropies
+        subsystems[i] = subsys
+        magic_vals[i] = Measure_Magic.MeasureMagic_Pure(state, pauli_ops[no_qubits], 2)[1]
     end
 
-    #fname = "RegularUnitaryCircuitMagicSampled_N_$(No_Qubits)_Samples_$(No_Samples)_Seed_$(Seed).jld2"
-    #matwrite(fname, Dict("Magic" => Magic)) 
-    #Psi_0 #No_Samples #No_Qubits #Seed #Entanglement #SubSystems
-    return Magic, Entanglement, SMagic, SubSystems, Purity
+    return magic_vals, entanglement, subsystems
 end
 
+function main()
+    save_output = get_bool_env("SAVE_OUTPUT", false)
 
-M, S, SM, SS, Pu = NQubit_Regular_Circuit_Magic_w_Entanglement_sampling(1, 2^20, 2);
-SML = map(first, SM)
-SMR = map(last, SM)
-S   = map(first, S)
-Pu  = map(first, Pu)
+    no_qubits = 3
+    no_samples = 2^20
+    seed = 2
+
+    magic_vals, entanglement, subsystems = regular_circuit_magic_with_entanglement_sampling(no_qubits, no_samples, seed)
+
+    if save_output
+        out_jld2 = output_path(
+            "RegularUnitaryCircuitMagicEntanglement_N_$(no_qubits)_Samples_$(no_samples)_Seed_$(seed).jld2";
+            script_dir=@__DIR__,
+            script_file=@__FILE__,
+        )
+        ensure_parent_dir(out_jld2)
+        JLD2.@save out_jld2 magic_vals entanglement subsystems no_qubits no_samples seed
+        @info "Saved results to $out_jld2"
+    else
+        @info "SAVE_OUTPUT is disabled; not writing JLD2 output."
+    end
+
+    return nothing
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
+end
