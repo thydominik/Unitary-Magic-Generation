@@ -7,6 +7,7 @@ This module provides:
 - Reduced density matrices via partial trace (pure-state optimized implementation).
 - von Neumann entropy.
 - Renyi entropies.
+- Entanglement negativity and logarithmic negativity (pure-state optimized via Schmidt coefficients).
 - Convenience functions to evaluate entanglement/entropy across standard bipartitions.
 
 Notes
@@ -22,6 +23,8 @@ using LinearAlgebra
 export reduced_density_matrix,
     von_neumann_entropy,
     renyi_entropy,
+    entanglement_negativity,
+    logarithmic_negativity,
     calculate_entanglement,
     calculate_renyi_entropy
 
@@ -61,6 +64,47 @@ function _filtered_eigenvalues(rho::AbstractMatrix{<:Complex}; tol::Real=1e-14)
         end
     end
     return reals
+end
+
+"""
+    _schmidt_coefficients(state_vector, subsystem_qubits) -> Vector{Float64}
+
+Compute Schmidt coefficients for the bipartition defined by `subsystem_qubits` and its complement.
+
+This uses a reshape + permute + SVD approach and is appropriate for pure states.
+"""
+function _schmidt_coefficients(
+    state_vector::AbstractVector{<:Complex},
+    subsystem_qubits::AbstractVector{<:Integer},
+)::Vector{Float64}
+    n_qubits = _n_qubits_from_state_length(length(state_vector))
+
+    a = _validate_qubit_indices(subsystem_qubits, n_qubits)
+    b = setdiff(collect(1:n_qubits), a)
+
+    # If one side is empty, there is no entanglement.
+    if isempty(a) || isempty(b)
+        return Float64[1.0]
+    end
+
+    psi = ComplexF64.(state_vector)
+    nrm = norm(psi)
+    nrm == 0 && throw(ArgumentError("state vector must be nonzero"))
+    psi ./= nrm
+
+    dims = ntuple(_ -> 2, n_qubits)
+    psi_tensor = reshape(psi, dims)
+
+    # Group qubits as [b, a]. Negativity is symmetric, so either order is fine.
+    perm = vcat(b, a)
+    psi_perm = permutedims(psi_tensor, perm)
+
+    dim_b = 2^length(b)
+    dim_a = 2^length(a)
+    psi_mat = reshape(psi_perm, dim_b, dim_a)
+
+    s = svdvals(psi_mat)
+    return Float64.(s)
 end
 
 # -----------------------------------------------------------------------------
@@ -172,6 +216,76 @@ function renyi_entropy(rho::AbstractMatrix{<:Complex}, alpha::Real)::Float64
 
     s = sum(v -> v^alpha, vals)
     return (1 / (1 - alpha)) * log2(s)
+end
+
+"""
+    entanglement_negativity(state_vector, subsystem_qubits) -> Float64
+
+Compute the entanglement negativity for a pure state across a bipartition.
+
+This function returns the (non-logarithmic) negativity
+
+    N = (||rho_PT||_1 - 1) / 2
+
+where rho_PT is the partial transpose of the bipartite density matrix. For pure states,
+this can be computed from the Schmidt coefficients s_i as
+
+    N = ((sum_i s_i)^2 - 1) / 2.
+
+Parameters
+- `state_vector`: Pure state vector of length 2^n.
+- `subsystem_qubits`: Qubit indices that define one side of the bipartition. The result is
+  symmetric under swapping the subsystem and its complement.
+
+Returns
+- Negativity as Float64.
+"""
+function entanglement_negativity(
+    state_vector::AbstractVector{<:Complex},
+    subsystem_qubits::AbstractVector{<:Integer},
+)::Float64
+    s = _schmidt_coefficients(state_vector, subsystem_qubits)
+    sum_s = sum(s)
+
+    # Numerical safety: sum_s should be >= 1 for normalized pure states.
+    if sum_s < 1.0
+        sum_s = 1.0
+    end
+
+    return 0.5 * (sum_s^2 - 1.0)
+end
+
+"""
+    logarithmic_negativity(state_vector, subsystem_qubits) -> Float64
+
+Compute the logarithmic entanglement negativity for a pure state across a bipartition.
+
+Definition
+- E_N = log2(||rho_PT||_1)
+
+For pure states, if s_i are Schmidt coefficients then
+- ||rho_PT||_1 = (sum_i s_i)^2
+- E_N = 2 * log2(sum_i s_i)
+
+Parameters
+- `state_vector`: Pure state vector of length 2^n.
+- `subsystem_qubits`: Qubit indices that define one side of the bipartition.
+
+Returns
+- Logarithmic negativity in bits.
+"""
+function logarithmic_negativity(
+    state_vector::AbstractVector{<:Complex},
+    subsystem_qubits::AbstractVector{<:Integer},
+)::Float64
+    s = _schmidt_coefficients(state_vector, subsystem_qubits)
+    sum_s = sum(s)
+
+    if sum_s < 1.0
+        sum_s = 1.0
+    end
+
+    return 2.0 * log2(sum_s)
 end
 
 """
