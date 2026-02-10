@@ -4,10 +4,12 @@ using Test
 include(joinpath(@__DIR__, "..", "src", "core", "entanglement", "entanglement.jl"))
 include(joinpath(@__DIR__, "..", "src", "core", "random_unitaries", "random_unitaries.jl"))
 include(joinpath(@__DIR__, "..", "src", "core", "circuits", "circuits.jl"))
+include(joinpath(@__DIR__, "..", "src", "core", "utilities", "utilities.jl"))
 
 using .entanglement
 using .random_unitaries
 using .circuits
+using .utilities
 
 @testset "entanglement" begin
     include("test_entanglement_negativity.jl")
@@ -15,4 +17,8 @@ end
 
 @testset "circuits" begin
     include("test_circuits_unitarity.jl")
+end
+
+@testset "utilities" begin
+    include("test_utilities_numerical_integration.jl")
 end
