@@ -9,7 +9,7 @@ This repository contains Julia research code used for numerical experiments on *
 The paper studies the *joint statistics* of magic and entanglement for random quantum states, with an emphasis on what happens as the number of qubits \(N\) grows. 
 
 Main findings:
-- The distribution of \(M_2\) for Haar-random \(N\)-qubit pure states becomes exponentially sharp and concentrates around a typical value \(\tilde{M}_2 \to N-2\).
+- The distribution of $M_2$ for Haar-random \(N\)-qubit pure states becomes exponentially sharp and concentrates around a typical value \(\tilde{M}_2 \to N-2\).
 - The bipartite von Neumann entanglement entropy \(S\) is likewise exponentially concentrated around its typical (Page-like) value (scaling \(\sim N/2\) up to finite-size corrections). 
 - Fluctuations of \(M_2\) and \(S\) become exponentially uncorrelated with \(N\), and the mutual information extracted from the sampled joint distribution \(P_N(M_2,S)\) decays exponentially, indicating asymptotic independence of the fluctuations. 
 - Sampling sufficiently deep brickwall circuits reproduces the Haar joint distribution in the investigated regime (depth on the order of system size is sufficient in those numerics). 
