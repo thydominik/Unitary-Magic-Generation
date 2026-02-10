@@ -31,7 +31,7 @@ $$
 In this repository we mostly focus on $\alpha=2$ (i.e., $M_2$). For reference, a useful upper bound is
 
 $$
-M_2(|\psi\rangle) \le \log_2\\left(\frac{2^N + 1}{2}\right).
+M_2(|\psi\rangle) \le \log_2\left(\frac{2^N + 1}{2}\right).
 $$
 
 Entanglement is quantified via the von Neumann entropy of a reduced density matrix $\rho_A$:
