@@ -18,33 +18,33 @@ Main findings:
 
 The analysis in the paper is based on the Pauli-string “spectrum” of a pure state $|\psi\rangle$. For an unsigned Pauli string $\sigma\in\mathcal{P}_N$ and Hilbert space dimension $d=2^N$, define
 
-\[
+$$
 \Xi_\psi(\sigma) = \frac{1}{d}\,\left|\langle\psi|\sigma|\psi\rangle\right|^2.
-\]
+$$
 
 The stabilizer $\alpha$-Rényi entropy (stabilizer Rényi entropy / “magic”) is
 
-\[
+$$
 M_\alpha(|\psi\rangle) = \frac{1}{1-\alpha}\,\log_2\!\left(\sum_{\sigma\in\mathcal{P}_N} \Xi_\psi(\sigma)^\alpha\right) - \log_2(d).
-\]
+$$
 
 In this repository we mostly focus on $\alpha=2$ (i.e., $M_2$). For reference, a useful upper bound is
 
-\[
+$
 M_2(|\psi\rangle) \le \log_2\!\left(\frac{2^N + 1}{2}\right).
-\]
+$
 
 Entanglement is quantified via the von Neumann entropy of a reduced density matrix $\rho_A$:
 
-\[
+$
 S(\rho_A) = -\mathrm{Tr}(\rho_A\,\log_2 \rho_A).
-\]
+$
 
 To quantify dependence in the sampled joint distribution $P_N(M_2,S)$, the paper uses mutual information
 
-\[
+$
 I(M_2,S) = \sum_{M_2}\sum_S P_N(M_2,S)\,\log_2\!\left(\frac{P_N(M_2,S)}{P_N(M_2)\,P_N(S)}\right).
-\]
+$
 
 ## Repository structure
 
