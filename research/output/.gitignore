@@ -1,0 +1,6 @@
+# Generated research outputs live here.
+#
+# We keep this directory in git so scripts can reliably save into it,
+# but we ignore all content.
+*
+!.gitignore

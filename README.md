@@ -1,108 +1,93 @@
-# Magic and Entanglement in Quantum Circuits 🧙
+# Unitary Magic Generation (research code)
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Julia: 100%](https://img.shields.io/badge/Julia-100%25-purple.svg)](https://julialang.org)
-[![Status: Archived](https://img.shields.io/badge/Status-Archived-red.svg)]
+This repository contains Julia research code used for numerical experiments on **magic** (stabilizer Rényi entropy / stabilizer 2-Rényi entropy $M_2$) and entanglement in Haar-random states and random unitary circuits, as reported in:
 
-> **⚠️ Note**: Archived repository. Code provided as proof of work—this is the computational foundation, not a complete or user-facing package.
+> Dominik Szombathy, Angelo Valli, Cătălin Pașcu Moca, Lóránt Farkas, and Gergely Zaránd, *Asymptotically independent fluctuations of stabilizer Rényi entropy and entanglement in random unitary circuits*, **Physical Review Research 7**, 043072 (2025). DOI: 10.1103/jplh-zl35.
 
-## Overview
+## Research focus
 
-This repository contains the computational framework for analyzing quantum magic (non-stabilizerness) and mutual information in random unitary circuits and dissipative quantum systems.
+The paper studies the *joint statistics* of magic and entanglement for random quantum states, with an emphasis on what happens as the number of qubits $N$ grows.
 
-**Author**: Dominik Szombathy  
-**Institution during work**: Budapest University of Technology and Economics  
-**Research Focus**: Quantum Information Theory, Magic States, Magic & Entanglement relationship
+Main findings:
+- The distribution of $M_2$ for Haar-random $N$-qubit pure states becomes exponentially sharp and concentrates around a typical value $\tilde{M}_2 \to N-2$.
+- The bipartite von Neumann entanglement entropy $S$ is likewise exponentially concentrated around its typical (Page-like) value (scaling $\sim N/2$ up to finite-size corrections).
+- Fluctuations of $M_2$ and $S$ become exponentially uncorrelated with $N$, and the mutual information extracted from the sampled joint distribution $P_N(M_2,S)$ decays exponentially, indicating asymptotic independence of the fluctuations.
+- Sampling sufficiently deep brickwall circuits reproduces the Haar joint distribution in the investigated regime (depth on the order of system size is sufficient in those numerics).
 
----
+## Relevant definitions
 
-## Research Summary
+The analysis in the paper is based on the Pauli-string “spectrum” of a pure state $|\psi\rangle$. For an unsigned Pauli string $\sigma\in\mathcal{P}_N$ and Hilbert space dimension $d=2^N$, define
 
-This work investigates how quantum resources—specifically **magic** and **entanglement**—emerge and propagate in quantum circuits under unitary evolution and Lindbladian dynamics. The central questions are:
+$$
+\Xi_\psi(\sigma) = \frac{1}{d}\,\left|\langle\psi|\sigma|\psi\rangle\right|^2.
+$$
 
-1. How do magic and entanglement correlate in random unitary circuits?
-2. Can environmental noise paradoxically *increase* magic in open quantum systems?
-3. What is the relationship between magic content and quantum computational advantage?
+The stabilizer $\alpha$-Rényi entropy (stabilizer Rényi entropy / “magic”) is
 
-### Key Findings
+$$
+M_\alpha(|\psi\rangle) = \frac{1}{1-\alpha}\,\log_2\\left(\sum_{\sigma\in\mathcal{P}_N} \Xi_\psi(\sigma)^\alpha\right) - \log_2(d).
+$$
 
-- In random unitary circuits, the mean values of magic and entanglement are correlated, but their fluctuations become asymptotically independent
-- Non-trivial stabilizer Rényi entropy can emerge as a result of environmental noise in dissipative systems
-- Magic serves as a fundamental resource for universal fault-tolerant quantum computation
+In this repository we mostly focus on $\alpha=2$ (i.e., $M_2$). For reference, a useful upper bound is
 
----
+$$
+M_2(|\psi\rangle) \le \log_2\left(\frac{2^N + 1}{2}\right).
+$$
 
-## Core Equations
+Entanglement is quantified via the von Neumann entropy of a reduced density matrix $\rho_A$:
 
-### Stabilizer Rényi Entropy (Magic)
+$$
+S(\rho_A) = -\mathrm{Tr}(\rho_A\,\log_2 \rho_A).
+$$
 
-The magic (non-stabilizerness) of a quantum state $\rho$ is quantified using the stabilizer Rényi entropy:
+To quantify dependence in the sampled joint distribution $P_N(M_2,S)$, the paper uses mutual information
 
-$$M(\rho) = \log_2 \left( \sum_P |\langle P | \rho | P \rangle|^2 \right)^{-1}$$
+$$
+I(M_2,S) = \sum_{M_2}\sum_S P_N(M_2,S)\,\log_2\\left(\frac{P_N(M_2,S)}{P_N(M_2)\,P_N(S)}\right).
+$$
 
+## Repository structure
 
-### Entanglement Entropy
+High-level layout:
 
-The von Neumann entanglement entropy of a bipartite system $AB$ is:
+```
+.
+├─ src/
+│  └─ core/                 # Core routines (magic, random unitaries, entanglement, ...)
+├─ research/
+│  ├─ Magic_Distribution_Analysis/   # Distribution plots and derived statistics
+│  ├─ Unitary_Circuit_Sampling/      # Sampling scripts (regular/brickwall circuits, etc.)
+│  ├─ TEMP_BrickWall_Clifford/       # Experimental / legacy scripts (kept for reference)
+│  ├─ output/               # Generated artifacts (ignored by git)
+│  └─ research_utils.jl      # Shared helpers: SAVE_OUTPUT, output paths, portability
+└─ (other files)
+```
 
-$$S_A(\rho) = -\text{Tr}[\rho_A \log_2 \rho_A]$$
+If you only want to *use* the core functionality (without running the large experiments), start in `src/core/`.
 
-where $\rho_A = \text{Tr}_B[\rho]$ is the reduced density matrix. For a pure state:
+If you want to *reproduce plots / statistics* from the workflows used in the paper, look in `research/`.
 
-$$S_A = S_B = \sum_i -\lambda_i \log_2 \lambda_i$$
+## Running the research scripts
 
-where $\lambda_i$ are the Schmidt coefficients.
+Research scripts are designed to be safe by default:
 
-### Mutual Information
+- **No files are written unless you opt in.**
+- Enable writing PDFs/PNGs/JLD2/MAT with `SAVE_OUTPUT=1`.
+- Generated files go under `research/output/...`.
 
-The mutual information between observables $X$ and $Y$ quantifies classical correlations:
+Many analysis scripts expect external datasets (not included here). Set:
 
-$$I(X;Y) = H(X) + H(Y) - H(X,Y) = \int\int p(x,y) \log_2 \frac{p(x,y)}{p(x)p(y)} \, dx \, dy$$
+- `RESEARCH_DATA_DIR=/path/to/data`
 
-where $H$ denotes the Shannon entropy. This repository implements histogram-based computation of mutual information with 2D numerical integration.
+Example:
 
----
+```bash
+RESEARCH_DATA_DIR=/path/to/data SAVE_OUTPUT=1 julia research/Magic_Distribution_Analysis/MagicDistribution_N5.jl
+```
 
+## Disclaimer (important)
 
-**Note**: This is a working implementation framework used during research. Analysis and interpretation were sometimes conducted separately. Not all analysis presented in the article is contained here.
-
----
-
-## References
-
-### Primary Literature
-
-- **Leone, L., Oliviero, S., & Hamma, A.** (2023). "Stabilizer Rényi Entropy." *Physical Review Letters*, 131(13), 130603.
-- **Beverland, M. E., et al.** (2022). "Quantum Error Correction for Quantum Memories." *Reviews of Modern Physics*, 97(4), 045025.
-- **Bravyi, S., & Kitaev, A.** (2005). "Universal quantum computation with ideal Clifford gates and noisy ancillas." *Physical Review A*, 71(2), 022316.
-
-### Theoretical Foundations
-
-- **Breuer, H.-P., & Petruccione, F.** (2002). *The Theory of Open Quantum Systems.* Oxford University Press.
-- **Lindblad, G.** (1976). "On the generators of quantum dynamical semigroups." *Communications in Mathematical Physics*, 48(2), 119-130.
-- **Preskill, J.** (2018). "Quantum Computing in the NISQ era and beyond." *Quantum*, 2, 79.
-
-### Resource Theory and Magic
-
-- **Gidney, C., & Ekera, M.** (2021). "How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits." *Quantum*, 5, 433.
-- **Jones, A. Z., & Gidney, C.** (2023). "A fast bitsliced implementation of AES on modern CPUs." *Cryptography*, 7(2), 20.
-- **Haah, J., Hastings, M. B., Ji, Z., & Liu, Y.** (2023). "Thermality of critical points in lattice models." *Physical Review Letters*, 131(23), 230603.
-
----
-
-## License
-
-Apache License 2.0 — See [LICENSE](LICENSE) file.
-
----
-
-## Author & Contact
-
-**Dominik Szombathy**  
-PhD Candidate, Budapest University of Technology and Economics   
-Email: [On GitHub profile]  
-
----
-
-**Last Updated**: 2025-12-13  
-**Status**: Archived (Not Actively Maintained)  
+- The code present in the repository cannot be considered complete and self-consistent.
+- This is a **research** codebase, not a polished software package; APIs and scripts may change.
+- The large raw datasets used in the paper are not included in this public repository (as these are way too large).
+- Some scripts are exploratory/legacy (especially under `research/TEMP_*`) and are provided for context rather than as a fully supported pipeline.

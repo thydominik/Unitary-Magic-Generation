@@ -32,3 +32,5 @@ Data/
 # Temporary files
 *.tmp
 *.temp
+
+*.pdf

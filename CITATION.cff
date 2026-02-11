@@ -1,31 +1,40 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using these metadata."
 type: software
-authors:
-  - family-names: "Szombathy"
-    given-names: "Dominik"
-    orcid: "https://orcid.org/YOUR-ORCID-HERE"
-title: "UnitaryMagicGeneration"
+title: "Unitary Magic Generation"
 version: 0.1.0
 date-released: 2026-01-19
 license: Apache-2.0
 repository-code: "https://github.com/thydominik/Unitary-Magic-Generation"
+url: "https://github.com/thydominik/Unitary-Magic-Generation"
+authors:
+  - family-names: "Szombathy"
+    given-names: "Dominik"
 keywords:
   - quantum-computing
-  - magic-states
-  - unitary-circuits
-  - stabilizer-codes
-  - dissipative-systems
-references:
-  - type: article
-    title: "TODO: Add paper title"
-    authors:
-      - family-names: "TODO"
-        given-names: "TODO"
-    journal: "TODO"
-    volume: "TODO"
-    issue: "TODO"
-    pages: "TODO"
-    year: 2024
-    doi: "TODO"
-    note: "Update with actual publication details"
+  - stabilizer-renyi-entropy
+  - magic
+  - entanglement-entropy
+  - random-unitary-circuits
+  - haar-random-states
+preferred-citation:
+  type: article
+  title: "Asymptotically independent fluctuations of stabilizer Rényi entropy and entanglement in random unitary circuits"
+  authors:
+    - family-names: "Szombathy"
+      given-names: "Dominik"
+    - family-names: "Valli"
+      given-names: "Angelo"
+    - family-names: "Moca"
+      given-names: "Cătălin Pașcu"
+    - family-names: "Farkas"
+      given-names: "Lóránt"
+    - family-names: "Zaránd"
+      given-names: "Gergely"
+  journal: "Physical Review Research"
+  volume: 7
+  issue: 4
+  pages: "043072"
+  year: 2025
+  doi: "10.1103/jplh-zl35"
+  url: "https://doi.org/10.1103/jplh-zl35"
