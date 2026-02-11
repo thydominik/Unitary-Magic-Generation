@@ -87,10 +87,7 @@ RESEARCH_DATA_DIR=/path/to/data SAVE_OUTPUT=1 julia research/Magic_Distribution_
 
 ## Disclaimer (important)
 
+- The code present in the repository cannot be considered complete and self-consistent.
 - This is a **research** codebase, not a polished software package; APIs and scripts may change.
-- The large raw datasets used in the paper are not included in this public repository (see the paper’s Data Availability statement).
+- The large raw datasets used in the paper are not included in this public repository (as these are way too large).
 - Some scripts are exploratory/legacy (especially under `research/TEMP_*`) and are provided for context rather than as a fully supported pipeline.
-
-## Citing
-
-If you use this code, please cite the Physical Review Research article above.
